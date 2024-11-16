@@ -80,6 +80,10 @@ void init_fir_filter1()
 
 void sample_in_1(double sample_I,double sample_Q)
 {
+// do a frequency shift of half the sample rate (1/4 of the total bandwidth of the full spectrum of I&Q)
+// the way to perform a frequency shift of f1 on samples with a sample rate of s1 is to multiply I&Q (complex) with e^(j*2*pi*f1/s1 * n) with n the sample number
+// if f1/s1 = 1/4 then you have to multiply with e^(O), e^(i*pi/2), e^(i*pi), e^(i*3*pi/2), ... or 1,j,-1,-j,1,j,-1, ....
+ 
 	switch(freq_shift_idx) {
 		case 0:
 			fir_in_1(sample_I,sample_Q);
