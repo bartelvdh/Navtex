@@ -13,9 +13,7 @@
 #include "fir1.h"
 #include "nav_sched.h"
 #include "message_store.h"
-#include "wav.h"
 
-int make_png(char *file_in, char *file_out, int rot);
 extern int sample_nbr;
 
 
@@ -29,19 +27,9 @@ extern int sample_nbr;
 #define SCHEDULE_DIR "/home/pi/Dev/"
 #define FREQ_OFFSET D_SAMPLE_RATE/D_DECIMATION_FACTOR/4
 
+int in_sample_rate = (int)(D_SAMPLE_RATE / D_DECIMATION_FACTOR);
 
 
-struct sched_item {
-        double  freq;
-        char    time[6];
-        int     duration;
-	int	hour;
-	int	min;
-	char min_str[3];
-	char hour_str[3];
-};
-
-int wav_sample_rate = (int)(D_SAMPLE_RATE / D_DECIMATION_FACTOR);
 int masterInitialised = 0;
 int slaveUninitialised = 0;
 
@@ -56,37 +44,8 @@ short *sample_buffer;
 unsigned int s_buffer_size;
 int in_idx, out_idx;
 
-WavFile *fp;
 
 
-
-void generate_random_filename(char *filename) {
-    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    strcpy(filename,"NT");
-    for (int i = 2; i < 10; i++) {
-        int key = rand() % (sizeof(charset) - 1); // Pick a random index from charset
-        filename[i] = charset[key];
-    }
-    filename[10] = '\0'; // Null-terminate the string
-    strcat(filename,".wav");	
-}
-
-
-void PrepWav()
-{
-    char filename[80];
-    generate_random_filename(filename);
-    fp = wav_open(filename, WAV_OPEN_WRITE);
-    wav_set_format(fp, WAV_FORMAT_PCM);
-    wav_set_num_channels(fp, 2);
-    wav_set_sample_rate(fp, wav_sample_rate);
-    wav_set_sample_size(fp, sizeof(short));
-}
-
-void EndWav()
-{
-    wav_close(fp);	
-}
 
 void StreamACallback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params, unsigned int numSamples, unsigned int reset, void *cbContext)
 {
@@ -227,7 +186,7 @@ int captureIQ(double rx_freq, int rx_seconds)
     unsigned int chosenIdx = 0;
     unsigned int from,to,num_bytes;
     
-    num_bytes_to_be_collected = wav_sample_rate* rx_seconds *2*sizeof(short);  // *2 for I and Q
+    num_bytes_to_be_collected = in_sample_rate* rx_seconds *2*sizeof(short);  // *2 for I and Q
     printf("requested Tuner%c Mode=%s\n", (reqTuner == 0)? 'A': 'B', (master_slave == 0)?
                "Single_Tuner": "Master/Slave");
     
@@ -432,7 +391,7 @@ int captureIQ(double rx_freq, int rx_seconds)
 
 
 
-   	    s_buffer_size = wav_sample_rate*2*8;   // *2 for I and Q; *5 for 5 seconds of buffer; s_buffer_size must be a multiple of 2
+   	    s_buffer_size = in_sample_rate*2*8;   // *2 for I and Q; *5 for 5 seconds of buffer; s_buffer_size must be a multiple of 2
 	    sample_buffer = malloc(s_buffer_size*sizeof(short)); 
             in_idx  = 1;  // should not be zero!!
 	    out_idx = 1; // idem
@@ -503,7 +462,6 @@ int captureIQ(double rx_freq, int rx_seconds)
                 	   sample_nbr++;
 			} 
 
-			 wav_write(fp, (void*)(&sample_buffer[from]), num_samples/2);
 
 			byte_count += num_bytes;
 			//printf("out_bytecount=%u\n",byte_count);
@@ -614,9 +572,7 @@ void *scheduler(void *prt)
  			}
 			printf("Freq: %f \n",rx_freq);
 
-			PrepWav();
 			captureIQ(rx_freq,10*60-10);
-			EndWav();
 		}
 		else 
 		{
@@ -630,7 +586,6 @@ void *scheduler(void *prt)
 
 int main(int argc, char *argv[])
 {
-    //pthread_t thread1;
     pthread_t thread2;
     
     if (argc!=1)
@@ -643,11 +598,9 @@ int main(int argc, char *argv[])
 
 
    pthread_create( &thread2, (pthread_attr_t *)NULL, scheduler, (void *) NULL ); 
-   //pthread_create( &thread1, (pthread_attr_t *)NULL, file_purger, (void *) NULL ); 
 
    for(;;)
    {
-	//purge_old_messages();
 	sleep(61);
    }
 

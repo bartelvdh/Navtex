@@ -297,64 +297,6 @@ void free_json_str(char *json_str)
 	cJSON_free(json_str);
 }
 
-/*
-char *get_messages() {
-// create a cJSON object
-cJSON *json = cJSON_CreateArray();
-
-
-        sqlite3 *db;
-        sqlite3_stmt *stmt;
-        sqlite3_open("navtex.db", &db);
-
-        if (db == NULL)
-        {
-                printf("Failed to open DB\n");
-                return ((char *) 0);
-        }
-
-        sqlite3_prepare_v2(db, "select * from messages", -1, &stmt, NULL);
-
-        while (sqlite3_step(stmt) != SQLITE_DONE) {
-                int i;
-                int num_cols = sqlite3_column_count(stmt);
-
-		cJSON *element = cJSON_CreateObject();
-                for (i = 0; i < num_cols; i++)
-                {
-                        switch (sqlite3_column_type(stmt, i))
-                        {
-                        case (SQLITE3_TEXT):
-				cJSON_AddStringToObject(element, sqlite3_column_name(stmt,i), (const char *) sqlite3_column_text(stmt, i));
-                                break;
-                        case (SQLITE_INTEGER):
- 				cJSON_AddNumberToObject(element, sqlite3_column_name(stmt,i), sqlite3_column_int(stmt, i));
-                                break;
-                        case (SQLITE_FLOAT):
-                                break;
-                        default:
-                                break;
-                        }
-                }
-		cJSON_AddItemToArray(json,element);
-        }
-
-        sqlite3_finalize(stmt);
-
-
-sqlite3_close(db);
-
-
-// convert the cJSON object to a JSON string
-char *json_str = cJSON_Print(json);
-
-// free the JSON string and cJSON object
-//cJSON_free(json_str);
-cJSON_Delete(json);
-
-return json_str;
-}
-*/
 
 char *get_config() {
 // create a cJSON object

@@ -150,7 +150,6 @@ void fir_in_1(double sample_I,double sample_Q)
 		   }
 	   }
 		
-//           printf("fir1 to fir2 %d %lf %lf \n" ,sample_nbr, conv_sum_I,conv_sum_Q);
 	   sample_in_2(conv_sum_I,conv_sum_Q);
  
 	   decimation_count = 0;

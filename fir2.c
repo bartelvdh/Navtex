@@ -107,7 +107,6 @@ void sample_in_2(double sample_I,double sample_Q)
 		 conv_buf_ptr -= 1;
 	      }
 	   }
-       //printf("fir2 to fir3 %d \n",sample_nbr);
        sample_in_3(conv_sum_I,conv_sum_Q);
 
        decimation_count = 0;
