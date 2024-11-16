@@ -18,16 +18,29 @@ extern int sample_nbr;
 
 
 ///////////// NAVTEX/SITOR-B /////////////
-//#define RX_FREQ 490000.0;
-//#define D_SAMPLE_RATE 4000000.0
-//#define D_DECIMATION_FACTOR 16
-#define D_SAMPLE_RATE 2073600.0
-#define D_DECIMATION_FACTOR 8
-#define TEMP_BUFFER_SIZE 1024 // must be a multiple of 4!!!
-#define SCHEDULE_DIR "/home/pi/Dev/"
-#define FREQ_OFFSET D_SAMPLE_RATE/D_DECIMATION_FACTOR/4
+#define NAVTEX_UPPER 518000
+#define NAVTEX_LOWER 490000
 
-int in_sample_rate = (int)(D_SAMPLE_RATE / D_DECIMATION_FACTOR);
+//first software decimation factor)
+#define DECIMATION1 4
+
+//224000
+#define IN_SAMPLE_RATE  (NAVTEX_UPPER-NAVTEX_LOWER)*2*DECIMATION1
+
+#define H_DECIMATION_FACTOR 16
+
+//3584000
+#define H_SAMPLE_RATE (IN_SAMPLE_RATE*H_DECIMATION_FACTOR*1.0)
+
+#define TEMP_BUFFER_SIZE 1024 // must be a multiple of 4!!!
+
+//14000
+#define FREQ_OFFSET (NAVTEX_UPPER-NAVTEX_LOWER)/2
+
+//504000
+#define FREQ_TUNER  ((NAVTEX_UPPER+NAVTEX_LOWER)/2)
+
+int in_sample_rate = (int)(IN_SAMPLE_RATE);
 
 
 int masterInitialised = 0;
@@ -165,7 +178,7 @@ void EventCallback(sdrplay_api_EventT eventId, sdrplay_api_TunerSelectT tuner, s
 
 
 
-int captureIQ(double rx_freq, int rx_seconds)
+int captureIQ()
 {
     sdrplay_api_DeviceT devs[6];
     unsigned int ndev;
@@ -178,15 +191,13 @@ int captureIQ(double rx_freq, int rx_seconds)
     sdrplay_api_RxChannelParamsT *chParams;
     unsigned int byte_count = 0;
     unsigned int num_samples;
-    int num_bytes_to_be_collected;
 
     int reqTuner = 0;
     int master_slave = 0;
 
     unsigned int chosenIdx = 0;
-    unsigned int from,to,num_bytes;
+    unsigned int from,to;
     
-    num_bytes_to_be_collected = in_sample_rate* rx_seconds *2*sizeof(short);  // *2 for I and Q
     printf("requested Tuner%c Mode=%s\n", (reqTuner == 0)? 'A': 'B', (master_slave == 0)?
                "Single_Tuner": "Master/Slave");
     
@@ -297,7 +308,7 @@ int captureIQ(double rx_freq, int rx_seconds)
                 {
  		    deviceParams->devParams->mode = sdrplay_api_ISOCH; 
  		    //deviceParams->devParams->mode = sdrplay_api_BULK; 
-                    deviceParams->devParams->fsFreq.fsHz = D_SAMPLE_RATE ;
+                    deviceParams->devParams->fsFreq.fsHz = H_SAMPLE_RATE ;
 
         	    deviceParams->devParams->rspDxParams.antennaSel = sdrplay_api_RspDx_ANTENNA_A;
 
@@ -311,8 +322,7 @@ int captureIQ(double rx_freq, int rx_seconds)
 
 
                 chParams->tunerParams.loMode = sdrplay_api_LO_Auto;
-                chParams->tunerParams.rfFreq.rfHz = rx_freq - FREQ_OFFSET; //(1/4 times sampling freq after decimation)
-                //chParams->tunerParams.bwType = sdrplay_api_BW_0_600;
+                chParams->tunerParams.rfFreq.rfHz = (float)FREQ_TUNER; //(1/4 times sampling freq after decimation)
                 chParams->tunerParams.bwType = sdrplay_api_BW_0_200;
                 chParams->tunerParams.ifType = sdrplay_api_IF_Zero;
                 //chParams->tunerParams.ifType = sdrplay_api_IF_0_450;
@@ -323,7 +333,7 @@ int captureIQ(double rx_freq, int rx_seconds)
                 //chParams->tunerParams.gain.LNAstate = 8; // LNAstate4 = 30dB (gain reduction)
                 chParams->tunerParams.gain.LNAstate = 0; // LNAstate0 = 0dB  FOR USE WITH FURUNO NAVTEX ANTENNA
         	chParams->ctrlParams.decimation.enable=1;
-		chParams->ctrlParams.decimation.decimationFactor=  D_DECIMATION_FACTOR;
+		chParams->ctrlParams.decimation.decimationFactor=  H_DECIMATION_FACTOR;
                 // set AGC
                 //chParams->ctrlParams.agc.enable = sdrplay_api_AGC_DISABLE;
                 chParams->ctrlParams.agc.enable = sdrplay_api_AGC_5HZ;
@@ -335,44 +345,6 @@ int captureIQ(double rx_freq, int rx_seconds)
             }
         	printf("devParams->fsFreq.fsHz: %f \n", deviceParams->devParams->fsFreq.fsHz);
         	printf("rxChannelA->tunerParams.rfFreq.rfHz: %f \n", deviceParams->rxChannelA->tunerParams.rfFreq.rfHz);
-		 // /*
-        	printf("sizeof(short) = %d\n", sizeof(short));
-        	printf("devParams->fsFreq.fsHz: %f \n", deviceParams->devParams->fsFreq.fsHz);
-        	printf("devParams->ppm: %f \n", deviceParams->devParams->ppm);
-        	printf("devParams->syncUpdate.sampleNum: %d \n", deviceParams->devParams->syncUpdate.sampleNum);
-        	printf("devParams->syncUpdate.period: %d \n", deviceParams->devParams->syncUpdate.period);
-        	printf("devParams->resetFlags.resetGainUpdate: %d \n", deviceParams->devParams->resetFlags.resetGainUpdate);
-        	printf("devParams->resetFlags.resetRfUpdate: %d \n", (int)deviceParams->devParams->resetFlags.resetRfUpdate);
-        	printf("devParams->resetFlags.resetFsUpdate: %d \n", (int)deviceParams->devParams->resetFlags.resetFsUpdate);
-        	printf("devParams->mode: %d \n", (int)deviceParams->devParams->mode);
-        	printf("devParams->samplesPerPkt: %d \n", deviceParams->devParams->samplesPerPkt);
-        	printf("devParams->rspDxParams.hdrEnable: %d \n", (int)deviceParams->devParams->rspDxParams.hdrEnable);
-        	printf("devParams->rspDxParams.biasTEnable: %d \n", (int)deviceParams->devParams->rspDxParams.biasTEnable);
-        	printf("devParams->rspDxParams.antennaSel (0=A;1=B;2=C): %d \n", (int)deviceParams->devParams->rspDxParams.antennaSel);
-        	printf("devParams->rspDxParams.rfNotchEnable: %d \n", (int)deviceParams->devParams->rspDxParams.rfNotchEnable);
-        	printf("devParams->rspDxParams.rfDabNotchEnable: %d \n", (int)deviceParams->devParams->rspDxParams.rfDabNotchEnable);
-        	printf("rxChannelA->tunerParams.bwType: %d \n", (int)deviceParams->rxChannelA->tunerParams.bwType);
-        	printf("rxChannelA->tunerParams.ifType: %d \n", (int)deviceParams->rxChannelA->tunerParams.ifType);
-        	printf("rxChannelA->tunerParams.loMode: %d \n", (int)deviceParams->rxChannelA->tunerParams.loMode);
-        	printf("rxChannelA->tunerParams.gain.gRdB: %d \n", (int)deviceParams->rxChannelA->tunerParams.gain.gRdB);
-        	printf("rxChannelA->tunerParams.gain.LNAstate: %d \n", (int)deviceParams->rxChannelA->tunerParams.gain.LNAstate);
-        	printf("rxChannelA->tunerParams.gain.syncUpdate: %d \n", (int)deviceParams->rxChannelA->tunerParams.gain.syncUpdate);
-        	printf("rxChannelA->tunerParams.gain.minGr: %d \n", (int)deviceParams->rxChannelA->tunerParams.gain.minGr);
-        	printf("rxChannelA->tunerParams.gain.gainVals.curr: %f \n", deviceParams->rxChannelA->tunerParams.gain.gainVals.curr);
-        	printf("rxChannelA->tunerParams.gain.gainVals.max: %f \n", deviceParams->rxChannelA->tunerParams.gain.gainVals.max);
-        	printf("rxChannelA->tunerParams.gain.gainVals.min: %f \n", deviceParams->rxChannelA->tunerParams.gain.gainVals.min);
-        	printf("rxChannelA->tunerParams.rfFreq.rfHz: %f \n", deviceParams->rxChannelA->tunerParams.rfFreq.rfHz);
-        	printf("rxChannelA->tunerParams.rfFreq.syncUpdate: %d \n", (int)deviceParams->rxChannelA->tunerParams.rfFreq.syncUpdate);
-        	printf("rxChannelA->ctrlParams.dcOffset.DCenable: %d \n", (int)deviceParams->rxChannelA->ctrlParams.dcOffset.DCenable);
-        	printf("rxChannelA->ctrlParams.dcOffset.IQenable: %d \n", (int)deviceParams->rxChannelA->ctrlParams.dcOffset.IQenable);
-        	printf("rxChannelA->ctrlParams.decimation.enable: %d \n", (int)deviceParams->rxChannelA->ctrlParams.decimation.enable);
-        	printf("rxChannelA->ctrlParams.decimation.decimationFactor: %d \n", (int)deviceParams->rxChannelA->ctrlParams.decimation.decimationFactor);
-        	printf("rxChannelA->ctrlParams.decimation.wideBandSignal: %d \n", (int)deviceParams->rxChannelA->ctrlParams.decimation.wideBandSignal);
-
-        	printf("rxChannelA->ctrlParams.agc.enable: %d \n", (int)deviceParams->rxChannelA->ctrlParams.agc.enable);
-        	printf("rxChannelA->ctrlParams.adsbMode: %d \n", (int)deviceParams->rxChannelA->ctrlParams.adsbMode);
-        	printf("rxChannelA->rspDxTunerParams.hdrBw: %d \n", (int)deviceParams->rxChannelA->rspDxTunerParams.hdrBw);
-		 // */
 
                 }
                 else
@@ -391,7 +363,7 @@ int captureIQ(double rx_freq, int rx_seconds)
 
 
 
-   	    s_buffer_size = in_sample_rate*2*8;   // *2 for I and Q; *5 for 5 seconds of buffer; s_buffer_size must be a multiple of 2
+   	    s_buffer_size = in_sample_rate*2*8;   // *2 for I and Q; *8 for 8 seconds of buffer; s_buffer_size must be a multiple of 2
 	    sample_buffer = malloc(s_buffer_size*sizeof(short)); 
             in_idx  = 1;  // should not be zero!!
 	    out_idx = 1; // idem
@@ -452,7 +424,7 @@ int captureIQ(double rx_freq, int rx_seconds)
 			}
                         //time to transfer  from from to to
 			num_samples=(to-from+1);  //one sample is an I or a Q value
-			num_bytes=num_samples*sizeof(short);
+			//num_bytes=num_samples*sizeof(short);
 
 			index=from;
 			for(i=0;i<num_samples;i+=2)
@@ -463,16 +435,11 @@ int captureIQ(double rx_freq, int rx_seconds)
 			} 
 
 
-			byte_count += num_bytes;
+			//byte_count += num_bytes;
 			//printf("out_bytecount=%u\n",byte_count);
 		 	out_idx = to;	
 		}		
-	        if(byte_count >= num_bytes_to_be_collected)
-	        {
-		   go_on=0;
-	        }
 	    }
-
 
 
 
