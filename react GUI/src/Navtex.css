@@ -1,0 +1,108 @@
+h1 {
+  display: block;
+  font-size: 1.5em;
+  margin-block-start: 0.67em;
+  margin-block-end: 10px;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 25px;
+  }
+  
+  .stationselect, .messageselect{
+    border-radius: 5px;
+    display: inline-block;
+    background-color: #CCCCCC;
+    margin: 6px;
+    padding: 1px 5px;
+  }
+  
+  .messagelist table tr td {
+    background-color: #f0f0f0;
+    margin: 20px;
+    padding: 5px 10px;
+    font-family:'Courier New';
+    font-size: 18px;
+  }
+
+
+  .messagelist table tr.newmessage {
+    font-weight: bold;
+  }
+
+  .messagelist table tr.oldmessage {
+    font-weight: 500;
+  }
+
+
+
+  table tr td div {
+
+    margin: 5px;
+
+  }
+   .emph {
+    background-color: #990b0b;
+    color: beige;
+
+  }
+  
+
+  .wrapper{
+          clear:both;
+          border: 2px;
+          padding: 5px 5px;
+          display: inline-block;
+          border-style: solid;
+          border-color: #CCCCCC;
+          border-radius: 5px;
+          margin-bottom: 30px;
+  }
+  
+
+  .navtextbox{
+    clear:both;
+    border: 3px;
+    padding: 10px 10px;
+    display: inline-block;
+    border-style: solid;
+    border-color: #717070;
+    border-radius: 5px;
+    line-height: 1.5;
+    font-family:'Courier New';
+    font-weight: 600;
+    font-size: 18px;
+}
+
+
+.mypar{
+margin:0;
+}
+
+
+  li {
+          float: left;
+    margin: 5px;
+    padding: 2px;
+    width: 18px;
+    text-align: center;
+  }
+  
+  li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 16px;
+    text-decoration: none;
+  }
+  
+  li:hover {
+    background-color: #dedede;
+  }
