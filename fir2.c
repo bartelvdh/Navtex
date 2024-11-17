@@ -1,4 +1,5 @@
 #include <stdio.h> 
+#include <math.h> 
 #include "fir2.h"
 #include "fir3.h"
 #define FIR_FILTER_BUFFER_SIZE 1024
@@ -8,60 +9,69 @@ extern int sample_nbr;
 
 unsigned short freq_shift_idx;
 
-#define FILTER_SIZE  49
+#define FILTER_SIZE  47
+
+//NOTE: FS/Freq_Shift = 4,5 hence 9 elements are needed for the freq shift
+#define FS_IN 63000 
+#define FREQ_SHIFT 14000
+#define FREQ_SHIFT_FILTER_SIZE 9
 
 
+static double freq_shift_coef_real[FREQ_SHIFT_FILTER_SIZE];
+static double freq_shift_coef_img[FREQ_SHIFT_FILTER_SIZE];
+
+
+
+/*  https://fiiir.com  s=63000, c=2300, Tb = 5500, Kaiser SA=65dB   */
 
 static double filter_h[] = {
-   -0.000129947925935584,
-    -0.000305240554266564,
-    -0.000572496538184548,
-    -0.000929756870196358,
-    -0.001352150761468049,
-    -0.001785402621812617,
-    -0.002141833509738044,
-    -0.002300141931851463,
-    -0.002109929475699450,
-    -0.001401402865354654,
-    0.000000000000000001,
-    0.002255069210971520,
-    0.005490092428429565,
-    0.009776222333550674,
-    0.015111536256190748,
-    0.021408360804625826,
-    0.028488055148479421,
-    0.036084731743229487,
-    0.043858416326694419,
-    0.051417027280707059,
-    0.058345433757715379,
-    0.064238886217281313,
-    0.068737441554297216,
-    0.071557731363186952,
-    0.072518597258295542,
-    0.071557731363186952,
-    0.068737441554297216,
-    0.064238886217281313,
-    0.058345433757715379,
-    0.051417027280707059,
-    0.043858416326694419,
-    0.036084731743229459,
-    0.028488055148479421,
-    0.021408360804625826,
-    0.015111536256190748,
-    0.009776222333550674,
-    0.005490092428429565,
-    0.002255069210971520,
-    0.000000000000000001,
-    -0.001401402865354654,
-    -0.002109929475699450,
-    -0.002300141931851463,
-    -0.002141833509738044,
-    -0.001785402621812616,
-    -0.001352150761468050,
-    -0.000929756870196358,
-    -0.000572496538184548,
-    -0.000305240554266565,
-    -0.000129947925935584
+    -0.000147108163274380,
+    -0.000344080458697122,
+    -0.000638246787779785,
+    -0.001020551993014626,
+    -0.001453156218493991,
+    -0.001862463815197339,
+    -0.002135768595997864,
+    -0.002123044308901244,
+    -0.001644885141859342,
+    -0.000506805672445239,
+    0.001480845849197846,
+    0.004479099821734249,
+    0.008595303819273255,
+    0.013859966338180792,
+    0.020208854764962980,
+    0.027473387873362013,
+    0.035381576745767467,
+    0.043570581210619269,
+    0.051610508057461923,
+    0.059037578414322979,
+    0.065393451564912761,
+    0.070266515161527154,
+    0.073330495501089402,
+    0.074375892066497792,
+    0.073330495501089402,
+    0.070266515161527154,
+    0.065393451564912802,
+    0.059037578414322937,
+    0.051610508057461923,
+    0.043570581210619269,
+    0.035381576745767467,
+    0.027473387873362013,
+    0.020208854764962980,
+    0.013859966338180792,
+    0.008595303819273255,
+    0.004479099821734245,
+    0.001480845849197846,
+    -0.000506805672445239,
+    -0.001644885141859342,
+    -0.002123044308901244,
+    -0.002135768595997864,
+    -0.001862463815197341,
+    -0.001453156218493992,
+    -0.001020551993014626,
+    -0.000638246787779785,
+    -0.000344080458697122,
+    -0.000147108163274380
 };
  
 static double buffer_I[FIR_FILTER_BUFFER_SIZE];
@@ -86,33 +96,25 @@ void init_fir_filter2()
       buffer_Q[i]=0;
    }
    freq_shift_idx=0;
+
+	for(i=0;i<FREQ_SHIFT_FILTER_SIZE;i++){
+		freq_shift_coef_real[i] = cos( -(2*M_PI*i*FREQ_SHIFT) /FS_IN);
+		freq_shift_coef_img[i] = sin( -(2*M_PI*i*FREQ_SHIFT) /FS_IN);
+	}
+
+
 }
 
 void sample_in_2(double sample_I,double sample_Q)
 {
-// do a frequency shift of (minus) half the sample rate (1/4 of the total bandwidth of the full spectrum of I&Q)
-// the way to perform a frequency shift of f1 on samples with a sample rate of s1 is to multiply I&Q (complex) with e^(j*2*pi*f1/s1 * n) with n the sample number
-// if f1/s1 = 1/4 then you have to multiply with e^(O), e^(i*pi/2), e^(i*pi), e^(i*3*pi/2), ... or 1,j,-1,-j,1,j,-1, ....
+	//perform a freq shift
+        fir_in_2(
+                 sample_I*freq_shift_coef_real[freq_shift_idx]-sample_Q*freq_shift_coef_img[freq_shift_idx],
+                 sample_I*freq_shift_coef_img[freq_shift_idx]+sample_Q*freq_shift_coef_real[freq_shift_idx]
+	);
 
-        switch(freq_shift_idx) {
-                case 0:
-                        fir_in_2(sample_I,sample_Q);
-                        break;
-
-                case 1:
-                        fir_in_2(sample_Q,-sample_I);
-                        break;
-
-                case 2:
-                        fir_in_2( -sample_I, -sample_Q);
-                        break;
-
-                case 3:
-                        fir_in_2(-sample_Q,sample_I);
-                        break;
-        }
         freq_shift_idx++;
-        freq_shift_idx %= 4;
+        freq_shift_idx %= FREQ_SHIFT_FILTER_SIZE;
 }
 
 

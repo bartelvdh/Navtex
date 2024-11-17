@@ -7,13 +7,10 @@
 // was 35
 #define CORRELATION_BUF_NUMBITS 56   
 #define CORRELATION_BUF_SAMPLE_SIZE  (CORRELATION_BUF_NUMBITS*SAMPLES_PER_BIT)
-#define SPB2 4   //samples per bit -1  and divided by 2
 // 9 is samples per bit, 7 is bits per symbol, 2 is #of symbols to consider for bit syncing
 //static int bit_sync_buffer[BIT_SYNC_BUF_SIZE];
 //static int bit_sync_sum[SAMPLES_PER_BIT];
 
-#define STATUS_SAMPLING_DATA
-#define STATUS_WAITING
 
 extern int sample_nbr;
 
@@ -67,7 +64,7 @@ void bs_decoded_sample_in(double ds)
 {
 	int i;
 
-	//keep the 'SAMPLES_PER_BIT' last samples (9)
+	//keep the 'SAMPLES_PER_BIT' last samples (10)
 	delta_angle_buffer[dab_index]=ds;	
 	dab_index++;
 	if (dab_index == SAMPLES_PER_BIT)

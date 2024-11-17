@@ -12,14 +12,7 @@ extern int sample_nbr;
 WavFile *dfp;
 
 
-#define D_SAMPLE_RATE 2073600.0
-#define D_DECIMATION_FACTOR 8
-#define D_DECIMATION_FACTOR_SW (6*6*8)
-
-unsigned int dec_wav_sample_rate = (int)(D_SAMPLE_RATE / D_DECIMATION_FACTOR / (D_DECIMATION_FACTOR_SW));  //900
-
-
-
+unsigned int dec_wav_sample_rate = 900;
 
 
 void QPrepWav()

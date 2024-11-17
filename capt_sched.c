@@ -24,12 +24,12 @@ extern int sample_nbr;
 //first software decimation factor)
 #define DECIMATION1 4
 
-//224000
-#define IN_SAMPLE_RATE  (NAVTEX_UPPER-NAVTEX_LOWER)*2*DECIMATION1
+//252000
+#define IN_SAMPLE_RATE 252000.0 
 
-#define H_DECIMATION_FACTOR 16
+#define H_DECIMATION_FACTOR 8
 
-//3584000
+//2016000
 #define H_SAMPLE_RATE (IN_SAMPLE_RATE*H_DECIMATION_FACTOR*1.0)
 
 #define TEMP_BUFFER_SIZE 1024 // must be a multiple of 4!!!
@@ -189,7 +189,7 @@ int captureIQ()
     sdrplay_api_DeviceParamsT *deviceParams = NULL;
     sdrplay_api_CallbackFnsT cbFns;
     sdrplay_api_RxChannelParamsT *chParams;
-    unsigned int byte_count = 0;
+    //unsigned int byte_count = 0;
     unsigned int num_samples;
 
     int reqTuner = 0;
@@ -505,49 +505,9 @@ int maximum(int a, int b) {
 
 void *scheduler(void *prt)
 {
-	char next_slot_plan;
-	int seconds_to_next_slot;
-	double rx_freq;
 
-  	for(;;)
-	{
-
-		//what is the next slot
-		//if (next slot is to be captured) 
-		//	wait a number of seconds until the next slot
-		//	capture slot
-		//else
-		//     wait approximately 10 min (a bit less)
-
-		next_slot_plan = slots_plan()[next_10_minute_slot()];
-		seconds_to_next_slot = seconds_to_next_10_min_slot();
-
-                printf("next slot number: %d \n",next_10_minute_slot());
-                printf("slots_plan: %s \n",slots_plan());
-                printf("next slot slots_plan: %c \n",next_slot_plan);
-		printf("seconds to next 10min slot: %d \n",seconds_to_next_10_min_slot());
-		sleep(maximum(seconds_to_next_slot-5,5));
-		if(next_slot_plan == '4' || next_slot_plan == '5')
-		{
-			printf("CAPTURE\n");
-			if(next_slot_plan=='4') {
-		   		rx_freq= (double) 490000.0;		
-			}
-			else
-		 	{
-		   		rx_freq= (double) 518000.0;		
- 			}
-			printf("Freq: %f \n",rx_freq);
-
-			captureIQ(rx_freq,10*60-10);
-		}
-		else 
-		{
-			printf("next slot not in plan \n");
-			printf("WAITING\n");
-			sleep(10*60-10);
-		}
-	}
+			captureIQ();
+			return(NULL);
 }
 
 
