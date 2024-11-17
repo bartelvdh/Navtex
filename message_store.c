@@ -48,7 +48,7 @@ long calculate_time_difference(char *timestamp) {
     return difftime(current_time, given_time);
 }
 
-int add_message(char *bbbb,char *message) {
+int add_message(char *bbbb, char *message, int freq) {
         char timestamp_str[TS_SIZE];
 
         sqlite3 *db;
@@ -69,10 +69,11 @@ int add_message(char *bbbb,char *message) {
 	sqlite3_step(stmt); 
         sqlite3_finalize(stmt);
 
-	sqlite3_prepare_v2(db, "insert into messages (bbbb,message,timestamp,age) values ( ?1 , ?2 , ?3 ,'NEW')", -1, &stmt, NULL);
+	sqlite3_prepare_v2(db, "insert into messages (bbbb,message,timestamp,age,freq) values ( ?1 , ?2 , ?3 ,'NEW',?4)", -1, &stmt, NULL);
         sqlite3_bind_text(stmt, 1, bbbb,          -1, SQLITE_STATIC);
         sqlite3_bind_text(stmt, 2, message,       -1, SQLITE_STATIC);
         sqlite3_bind_text(stmt, 3, timestamp_str, -1, SQLITE_STATIC);
+        sqlite3_bind_int(stmt, 4, freq);
  
 	if (sqlite3_step(stmt) == SQLITE_DONE) 
 	{ return 0; }
@@ -102,7 +103,7 @@ cJSON *json = cJSON_CreateArray();
                 return ((char *) 0);
         }
 
-        sqlite3_prepare_v2(db, "select id,bbbb,timestamp,age from messages order by timestamp desc", -1, &stmt, NULL);
+        sqlite3_prepare_v2(db, "select id,bbbb,timestamp,age,freq from messages order by timestamp desc", -1, &stmt, NULL);
 
         while (sqlite3_step(stmt) != SQLITE_DONE) {
                 int i;

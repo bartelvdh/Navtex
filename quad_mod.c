@@ -3,13 +3,12 @@
 #include "quad_mod.h"
 #include "bit_sync.h"
 #include "bit_det.h"
-#include "wav.h"
 
 
 double prevI;
 double prevQ;
 extern int sample_nbr;
-WavFile *dfp;
+//WavFile *dfp;
 
 
 unsigned int dec_wav_sample_rate = 900;
@@ -48,15 +47,15 @@ void sample_in_quad_mod(double sampleI,double sampleQ)
   double prodReal;
   double prodImg; 
   double result;
-  short sample_store[2];
+//  short sample_store[2];
 
 	/* from the GNU-RADIO quadrature demodulator:
 	Mathematically, this block calculates the product of the one-sample delayed-&-conjugated input and the undelayed signal, and then calculates the argument (a.k.a. angle, in radians) of the resulting complex number
 	*/
 
 //        printf("I:%.6f; Q:%.6f\n", sampleI,sampleQ);
-        sample_store[0]= (short) sampleI*1000;
-        sample_store[1]= (short) sampleQ*1000;
+//        sample_store[0]= (short) sampleI*1000;
+//        sample_store[1]= (short) sampleQ*1000;
 //        wav_write(dfp, (void*)(sample_store),1);	
 
 

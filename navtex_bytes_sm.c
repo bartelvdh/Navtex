@@ -62,6 +62,14 @@ int prev_sample_nbr =0;
 #define BYTE_MODE_LETTERS 	3
 #define BYTE_MODE_FIGURES 	4
 
+#define E_BUFFER_SIZE 12
+#define ERROR_THRESHOLD 10
+
+static char DX_byte;
+char dx_buffer[3];
+char error_buffer[E_BUFFER_SIZE];
+
+static char temp_byte;
 static char line_buffer[5000];  // 5000 because there cannot be more than 4000 characters transmitted in a 10 min slot
 static char message_buffer[5000];  // 5000 because there cannot be more than 4000 characters transmitted in a 10 min slot
 static char message_bbbb[10]; 
@@ -78,7 +86,6 @@ int end_of_emission_counter;
 int previous_DX_was_alpha;
 int end_of_emission_detected;
 int post_end_of_emission_counter;
-FILE *mesg_fp;
 
 
 
@@ -188,11 +195,6 @@ void message_byte_out(unsigned char byte_in)
 
 
 
-static char DX_byte;
-char dx_buffer[3];
-#define E_BUFFER_SIZE 12
-#define ERROR_THRESHOLD 10
-char error_buffer[E_BUFFER_SIZE];
 
 void receive_rxdx_byte(unsigned char byte_received)
 {
@@ -320,7 +322,6 @@ void receive_rxdx_byte(unsigned char byte_received)
 }
 
 
-static char temp_byte;
 
 void receive_bit(char bit_received)
 {

@@ -11,7 +11,7 @@ unsigned short freq_shift_idx;
 
 #define FILTER_SIZE  47
 
-//NOTE: FS/Freq_Shift = 4,5 hence 9 elements are needed for the freq shift
+//NOTE: FS/Freq_Shift = 4,5 hence 9 elements are needed for the freq shift filter
 #define FS_IN 63000 
 #define FREQ_SHIFT 14000
 #define FREQ_SHIFT_FILTER_SIZE 9
