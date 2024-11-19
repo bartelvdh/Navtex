@@ -80,6 +80,12 @@ static int buffer_ptr;
 static int decimation_count;
 
 
+static double buffer_I_490[FIR_FILTER_BUFFER_SIZE];
+static double buffer_Q_490[FIR_FILTER_BUFFER_SIZE];
+static int buffer_ptr_490;
+static int decimation_count_490;
+
+
 
 
 
@@ -98,8 +104,8 @@ void init_fir_filter2()
    freq_shift_idx=0;
 
 	for(i=0;i<FREQ_SHIFT_FILTER_SIZE;i++){
-		freq_shift_coef_real[i] = cos( -(2*M_PI*i*FREQ_SHIFT) /FS_IN);
-		freq_shift_coef_img[i] = sin( -(2*M_PI*i*FREQ_SHIFT) /FS_IN);
+		freq_shift_coef_real[i] = cos( (2*M_PI*i*FREQ_SHIFT) /FS_IN);
+		freq_shift_coef_img[i] = -sin( (2*M_PI*i*FREQ_SHIFT) /FS_IN);
 	}
 
 
@@ -111,6 +117,12 @@ void sample_in_2(double sample_I,double sample_Q)
         fir_in_2(
                  sample_I*freq_shift_coef_real[freq_shift_idx]-sample_Q*freq_shift_coef_img[freq_shift_idx],
                  sample_I*freq_shift_coef_img[freq_shift_idx]+sample_Q*freq_shift_coef_real[freq_shift_idx]
+	);
+
+
+        fir_in_2_490(
+                 sample_I*freq_shift_coef_real[freq_shift_idx]+sample_Q*freq_shift_coef_img[freq_shift_idx],
+                 -sample_I*freq_shift_coef_img[freq_shift_idx]+sample_Q*freq_shift_coef_real[freq_shift_idx]
 	);
 
         freq_shift_idx++;
@@ -160,4 +172,47 @@ void fir_in_2(double sample_I,double sample_Q)
    buffer_ptr %= FIR_FILTER_BUFFER_SIZE;
 }
 
+
+
+void fir_in_2_490(double sample_I,double sample_Q)
+{
+   int i;
+   int conv_buf_ptr;
+   double conv_sum_I;
+   double conv_sum_Q;
+   double filter_coef;
+
+   buffer_I_490[buffer_ptr_490] = sample_I;
+   buffer_Q_490[buffer_ptr_490] = sample_Q;
+
+
+   decimation_count_490++;
+   if( (decimation_count_490 % DECIMATION_FACTOR) == 0)
+   {
+	   conv_sum_I = 0.0;
+	   conv_sum_Q = 0.0;
+	   conv_buf_ptr = buffer_ptr_490;
+
+	   for(i=0; i < FILTER_SIZE; i++)
+	   {
+ 	      filter_coef=filter_h[i];
+	      conv_sum_I += filter_coef * buffer_I_490[conv_buf_ptr];
+	      conv_sum_Q += filter_coef * buffer_Q_490[conv_buf_ptr];
+	      if(conv_buf_ptr == 0)
+	      {
+		 conv_buf_ptr = FIR_FILTER_BUFFER_SIZE-1;
+	      }
+	      else
+	      {
+		 conv_buf_ptr -= 1;
+	      }
+	   }
+       //sample_in_3(conv_sum_I,conv_sum_Q);
+
+       decimation_count_490 = 0;
+   }
+
+   buffer_ptr_490++;
+   buffer_ptr_490 %= FIR_FILTER_BUFFER_SIZE;
+}
 
