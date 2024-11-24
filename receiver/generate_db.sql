@@ -1,0 +1,12 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "messages" (id integer primary key autoincrement,bbbb text,message text,timestamp text, age text, freq integer);
+CREATE TABLE config (id integer primary key autoincrement,tag text,value text);
+INSERT INTO config VALUES(1,'stations518','PSTV');
+INSERT INTO config VALUES(2,'messages518','ABCDEFL');
+INSERT INTO config VALUES(3,'stations490','B');
+INSERT INTO config VALUES(4,'messages490','ABCDEFL');
+DELETE FROM sqlite_sequence;
+INSERT INTO sqlite_sequence VALUES('messages',4);
+INSERT INTO sqlite_sequence VALUES('config',4);
+COMMIT;
