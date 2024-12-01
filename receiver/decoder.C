@@ -3,7 +3,7 @@
 
 
 
-decoder::decoder()
+decoder::decoder(byte_state_machine * bsm)
 {
    int i;
    float angle;
@@ -34,6 +34,8 @@ decoder::decoder()
         dab_primed=0;
         cb_primed=0;
         csa_primed=0;
+
+	output_bsm = bsm;
 }
 
 
@@ -122,11 +124,11 @@ void decoder::bd_decoded_sample_in(double ds,double sampleR,double sampleI)
         Yrot = Yrotated_samplesumR*Yrotated_samplesumR+Yrotated_samplesumI*Yrotated_samplesumI;
         if(Brot>Yrot)
         {
-           //receive_bit('B');
+           output_bsm->receive_bit('B');
         }
         else
         {
-           //receive_bit('Y');
+           output_bsm->receive_bit('Y');
         }
         status = STATUS_SYNCED_WAIT;
         bit_sync_offset = next_bit_sync_offset ;

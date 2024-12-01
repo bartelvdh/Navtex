@@ -2,7 +2,7 @@
 
 
 
-fir_filter3::fir_filter3()
+fir_filter3::fir_filter3(decoder * dec)
 {
    int i;
 	
@@ -14,6 +14,7 @@ fir_filter3::fir_filter3()
       buffer_I[i]=0;
       buffer_Q[i]=0;
    }
+   output_dec = dec;
 }
 
 
@@ -30,13 +31,13 @@ void fir_filter3::sample_in(double sample_I,double sample_Q)
    buffer_Q[buffer_ptr] = sample_Q;
 
    decimation_count++;
-   if( (decimation_count % DECIMATION_FACTOR) == 0)
+   if( (decimation_count % DECIMATION_FACTOR_3) == 0)
    {
 	   conv_sum_I = 0.0;
 	   conv_sum_Q = 0.0;
 	   conv_buf_ptr = buffer_ptr;
 
-	   for(i=0; i < FILTER_SIZE; i++)
+	   for(i=0; i < FILTER_SIZE_3; i++)
 	   {
  	      filter_coef=filter_h[i];
 	      conv_sum_I += filter_coef * buffer_I[conv_buf_ptr];
@@ -50,7 +51,7 @@ void fir_filter3::sample_in(double sample_I,double sample_Q)
 		 conv_buf_ptr -= 1;
 	      }
 	   }
-	//sample_in_quad_mod(conv_sum_I,conv_sum_Q); 
+	output_dec->sample_in(conv_sum_I,conv_sum_Q); 
         decimation_count = 0;
    }
 
