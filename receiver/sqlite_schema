@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS "messages" (id integer primary key autoincrement,bbbb text,message text,timestamp text, age text, freq integer);
+CREATE TABLE config (id integer primary key autoincrement,tag text,value text);
