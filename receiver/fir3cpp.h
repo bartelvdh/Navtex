@@ -1,14 +1,20 @@
-#define FIR_FILTER_BUFFER_SIZE 1024
-#define DECIMATION_FACTOR 10
-#define FILTER_SIZE 71
+#ifndef FIR3CPP_H
+#define FIR3CPP_H
 
+
+
+#define FIR_FILTER_BUFFER_SIZE 1024
+#define DECIMATION_FACTOR_3 10
+#define FILTER_SIZE_3 71
+
+#include "decoder.h"
 
 class fir_filter3 {    
 
 
   private:
 /*  https://fiiir.com  s=9000, c=250, Tb = 380, Kaiser SA=50dB   */
-   double filter_h[FILTER_SIZE] = {
+   double filter_h[FILTER_SIZE_3] = {
     -0.000087345817796987,
     -0.000232195132266332,
     -0.000442076243951628,
@@ -81,14 +87,17 @@ class fir_filter3 {
     -0.000232195132266332,
     -0.000087345817796987
    };
-        static double buffer_I[FIR_FILTER_BUFFER_SIZE];
-        static double buffer_Q[FIR_FILTER_BUFFER_SIZE];
-        static int buffer_ptr;
-        static int decimation_count;
-
+        double buffer_I[FIR_FILTER_BUFFER_SIZE];
+        double buffer_Q[FIR_FILTER_BUFFER_SIZE];
+        int buffer_ptr;
+        int decimation_count;
+      
+        decoder * output_dec; 
 
 
   public:         
-    fir_filter3();
+    fir_filter3(decoder * dec);
     void sample_in (double sample_I,double sample_Q);
 };
+
+#endif
