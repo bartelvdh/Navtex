@@ -1,0 +1,35 @@
+CC=gcc
+CCPP=g++
+CFLAGS= -O3 -Wall -Wl,-rpath=/usr/local/lib64
+CFLAGSSIZE= -Os -Wall -Wl,-rpath=/usr/local/lib64
+LDLIBS=-lsdrplay_api  -lcjson -pthread -ldl
+
+all:  nav_sched_dual 
+
+clean:
+	rm -f *.o  nav_sched_dual
+
+nav_sched_dual: capt_sched.o nav_schedC.o fir1cpp.o fir2cpp.o fir3cpp.o decoder.o nav_b_sm.o  message_store.o sqlite3.o 
+	$(CC) $(CFLAGS) capt_sched.o nav_schedC.o fir1cpp.o fir2cpp.o fir3cpp.o decoder.o nav_b_sm.o message_store.o sqlite3.o -o nav_sched_dual -lm $(LDLIBS)
+
+
+capt_sched.o: capt_sched.c
+	$(CC) $(CFLAGS) -c capt_sched.c
+nav_schedC.o: nav_sched.C fir1cpp.h fir2cpp.h fir3cpp.h decoder.h nav_b_sm.h nav_sched.h
+	$(CCPP) $(CFLAGS) -c nav_sched.C -o nav_schedC.o
+fir1ccp.o: fir1cpp.C fir1cpp.h fir2cpp.h
+	$(CC) $(CFLAGS) -c fir1cpp.c
+fir2ccp.o: fir2cpp.C fir2cpp.h fir3cpp.h
+	$(CC) $(CFLAGS) -c fir2cpp.c
+fir3ccp.o: fir3cpp.C fir3cpp.h decoder.h
+	$(CC) $(CFLAGS) -c fir3cpp.C
+decoder.o: decoder.C decoder.h nav_b_sm.h
+	$(CC) $(CFLAGS) -c decoder.C
+sqlite3.o: sqlite3.c
+	$(CC) $(CFLAGSSIZE) -c sqlite3.c
+message_store.o: message_store.c message_store.h
+	$(CC) $(CFLAGS) -c message_store.c
+nav_b_sm.o: nav_b_sm.C decoder.h nav_b_sm.h
+	$(CC) $(CFLAGS) -c nav_b_sm.C
+
+
