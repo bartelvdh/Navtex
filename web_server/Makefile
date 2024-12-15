@@ -1,5 +1,4 @@
 CC=gcc
-#CFLAGS= -O3 -ffunction-sections  -Wall -Wl,-rpath=/usr/local/lib64 -Wl,-gc-sections  -std=gnu99
 CFLAGS= -O3   -Wall  
 
 all: https_fileserver
