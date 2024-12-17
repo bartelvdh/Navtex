@@ -103,7 +103,10 @@ cJSON *json = cJSON_CreateArray();
                 return ((char *) 0);
         }
 
-        sqlite3_prepare_v2(db, "select id,bbbb,timestamp,age,freq from messages order by timestamp desc", -1, &stmt, NULL);
+        //sqlite3_prepare_v2(db, "select id,bbbb,timestamp,age,freq from messages order by timestamp desc", -1, &stmt, NULL);
+        sqlite3_prepare_v2(db, "select messages.id as id,bbbb,timestamp,age,freq from messages, config AS CO1, config AS CO2 where (freq=518 and CO1.tag='stations518' and instr(CO1.value,substr(bbbb,1,1))>0 and CO2.tag='messages518' and instr(CO2.value,substr(bbbb,2,1)) > 0) OR  (freq=490 and CO1.tag='stations490' and instr(CO1.value,substr(bbbb,1,1))>0 and CO2.tag='messages490' and instr(CO2.value,substr(bbbb,2,1)) > 0) order by timestamp desc", -1, &stmt, NULL);
+
+
 
         while (sqlite3_step(stmt) != SQLITE_DONE) {
                 int i;
