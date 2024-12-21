@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 #include <gnutls/gnutls.h>
 #include <gcrypt.h>
-#include "message_store.h"
+#include "../receiver/message_store.h"
 
 #define BUF_SIZE 1024
 #define MAX_URL_LEN 255
