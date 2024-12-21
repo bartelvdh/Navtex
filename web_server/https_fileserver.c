@@ -66,7 +66,8 @@ file_free_callback (void *cls)
 }
 
 /* HTTP access handler call back */
-static int
+//static int
+enum MHD_Result 
 http_ahc (void *cls,
           struct MHD_Connection *connection,
           const char *url,
