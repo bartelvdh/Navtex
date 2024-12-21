@@ -33,6 +33,8 @@
  */
 
 //#include "platform.h"
+#include <stdio.h>
+#include <errno.h>
 #include <microhttpd.h>
 #include <sys/stat.h>
 #include <gnutls/gnutls.h>
@@ -219,8 +221,10 @@ main (int argc, char *const *argv)
 {
   struct MHD_Daemon *TLS_daemon;
   int port_nr;
-  /////////TEST////////
-  //printf("slots_plan: %s \n",slots_plan());
+
+  if (chdir(WEB_ROOT) != 0)
+    perror("chdir() to webroot failed");
+
   if (argc == 2)
   { 
     port_nr = atoi(argv[1]);

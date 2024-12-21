@@ -6,6 +6,8 @@ navtexwebserver_LDADD =  -L/usr/local/lib -lcjson -ldl -lm -lsqlite3  -lmicrohtt
 navtexwebserver_LDFLAGS =  -pthread 
 
 AM_CPPFLAGS = -DDATA_FILE=\"/opt/Navtex/Navtex.db\"
+AM_CPPFLAGS = -DWEB_ROOT=\"/opt/Navtex/build\"
+
 EXTRA_DIST = build
 
 
