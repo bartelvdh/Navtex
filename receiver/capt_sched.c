@@ -58,7 +58,7 @@ unsigned int s_buffer_size;
 int in_idx, out_idx;
 
 
-short biasTflag = 0;
+unsigned char biasTflag = 0;
 char selectedAntennaPort = 'A';
 
 
@@ -331,13 +331,13 @@ void *captureIQ(void *prt)
 		 	    }
 			    deviceParams->devParams->rspDxParams.rfNotchEnable=0;
 			    deviceParams->devParams->rspDxParams.rfDabNotchEnable=1;
-			    deviceParams->devParams->rspDxParams.biasTEnable = (unsigned char)biasTflag;
+			    deviceParams->devParams->rspDxParams.biasTEnable = biasTflag;
 		    }
 	            if (chosenDevice->hwVer == SDRPLAY_RSP1A_ID)
 		    {
 			    deviceParams->devParams->rsp1aParams.rfNotchEnable=0;
 			    deviceParams->devParams->rsp1aParams.rfDabNotchEnable=1;
-			    deviceParams->rxChannelA->rsp1aTunerParams.biasTEnable=(unsigned char)biasTflag;
+			    deviceParams->rxChannelA->rsp1aTunerParams.biasTEnable=biasTflag;
 		    }
 
 
@@ -499,7 +499,6 @@ int main(int argc, char *argv[])
 {
 
 
- int biasTflag = 0;
  char *pvalue = NULL;
  int index;
  char c;
@@ -511,7 +510,7 @@ int main(int argc, char *argv[])
     switch (c)
       {
       case 'b':
-        biasTflag = 1;
+        biasTflag = (unsigned char)1;
 	printf("set BiasT active\n");
         break;
       case 'p':
