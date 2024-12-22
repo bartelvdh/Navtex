@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +58,8 @@ unsigned int s_buffer_size;
 int in_idx, out_idx;
 
 
+short biasTflag = 0;
+char selectedAntennaPort = 'A';
 
 
 void StreamACallback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params, unsigned int numSamples, unsigned int reset, void *cbContext)
@@ -177,7 +180,7 @@ void EventCallback(sdrplay_api_EventT eventId, sdrplay_api_TunerSelectT tuner, s
 
 
 
-int captureIQ()
+void *captureIQ(void *prt)
 {
     sdrplay_api_DeviceT devs[6];
     unsigned int ndev;
@@ -253,11 +256,14 @@ int captureIQ()
 
             // Choose device
             {
-                // Pick first device of any type
+                // Pick first device of supported type
                 for (i = 0; i < (int)ndev; i++)
                 {
+ 		   if ( (devs[i].hwVer == SDRPLAY_RSPdx_ID) ||  (devs[i].hwVer == SDRPLAY_RSP1A_ID) )
+		   {
                     chosenIdx = i;
                     break;
+		   }
                 }
             }
             if (i == ndev)
@@ -308,12 +314,33 @@ int captureIQ()
  		    deviceParams->devParams->mode = sdrplay_api_ISOCH; 
  		    //deviceParams->devParams->mode = sdrplay_api_BULK; 
                     deviceParams->devParams->fsFreq.fsHz = H_SAMPLE_RATE ;
+	            if (chosenDevice->hwVer == SDRPLAY_RSPdx_ID)
+		    {
+			    switch (selectedAntennaPort) {
+				  case 'A':
+					deviceParams->devParams->rspDxParams.antennaSel = sdrplay_api_RspDx_ANTENNA_A;
+				    break;
+				  case 'B':
+					deviceParams->devParams->rspDxParams.antennaSel = sdrplay_api_RspDx_ANTENNA_B;
+				    break;
+				  case 'C':
+					deviceParams->devParams->rspDxParams.antennaSel = sdrplay_api_RspDx_ANTENNA_C;
+				    break;
+				  default:
+					deviceParams->devParams->rspDxParams.antennaSel = sdrplay_api_RspDx_ANTENNA_A;
+		 	    }
+			    deviceParams->devParams->rspDxParams.rfNotchEnable=0;
+			    deviceParams->devParams->rspDxParams.rfDabNotchEnable=1;
+			    deviceParams->devParams->rspDxParams.biasTEnable = (unsigned char)biasTflag;
+		    }
+	            if (chosenDevice->hwVer == SDRPLAY_RSP1A_ID)
+		    {
+			    deviceParams->devParams->rsp1aParams.rfNotchEnable=0;
+			    deviceParams->devParams->rsp1aParams.rfDabNotchEnable=1;
+			    deviceParams->rxChannelA->rsp1aTunerParams.biasTEnable=(unsigned char)biasTflag;
+		    }
 
-        	    deviceParams->devParams->rspDxParams.antennaSel = sdrplay_api_RspDx_ANTENNA_B;
-		    deviceParams->devParams->rspDxParams.biasTEnable = 1;
 
-        	    deviceParams->devParams->rspDxParams.rfNotchEnable=0;
-        	    deviceParams->devParams->rspDxParams.rfDabNotchEnable=1;
 
             // Configure tuner parameters (depends on selected Tuner which set of parameters to use)
             chParams = deviceParams->rxChannelA;
@@ -454,59 +481,9 @@ CloseApi:
         // Close API
         sdrplay_api_Close();
     }
-    return 0;
 }
 
 
-int seconds_to_next_10_min_slot() {
-    // Get the current time
-    time_t now = time(NULL);
-    
-    // Convert to struct tm for UTC
-    struct tm *timeinfo = gmtime(&now);
-
-    // Calculate the seconds passed since the last 10-minute slot
-    int minutes = timeinfo->tm_min % 10;
-    int seconds = timeinfo->tm_sec;
-    int seconds_passed = minutes * 60 + seconds;
-
-    // Calculate the remaining seconds to the next 10-minute slot
-    int seconds_to_next_slot = 10 * 60 - seconds_passed ;
-
-    return seconds_to_next_slot;
-}
-
-int next_10_minute_slot() {
-    // Get the current time
-    time_t now = time(NULL);
-    
-    // Convert to struct tm for local time
-    struct tm *timeinfo = gmtime(&now);
-
-    // Calculate the number of 10-minute slots passed since the start of the day
-    int slots_passed = timeinfo->tm_hour * 6 + timeinfo->tm_min / 10;
-
-    // The next 10-minute slot
-    int next_slot = (slots_passed+1) % 24 ;
-
-    return next_slot;
-}
-
-int maximum(int a, int b) {
- 	if(a>b) {
-		return(a);
- 	} else {
-		return(b);
-	}
-}
-
-
-void *scheduler(void *prt)
-{
-
-			captureIQ();
-			return(NULL);
-}
 
 
 
@@ -520,22 +497,62 @@ void init_dsp()
 
 int main(int argc, char *argv[])
 {
+
+
+ int biasTflag = 0;
+ char *pvalue = NULL;
+ int index;
+ char c;
+
+  opterr = 0;
+
+
+  while ((c = getopt (argc, argv, "bp:")) != (char)-1) {
+    switch (c)
+      {
+      case 'b':
+        biasTflag = 1;
+	printf("set BiasT active\n");
+        break;
+      case 'p':
+        pvalue = optarg;
+	if(strcmp(pvalue,"A")==0) 
+		selectedAntennaPort = 'A';
+        else if(strcmp(pvalue,"B")==0)
+		selectedAntennaPort = 'B';
+        else if(strcmp(pvalue,"C")==0)
+		selectedAntennaPort = 'C';
+        else if(strcmp(pvalue,"Z")==0)
+		selectedAntennaPort = 'C';
+	else { printf("invalid antenna port option\n"); return 1; }
+
+	printf("Antenna port selected: %c\n",selectedAntennaPort);
+        break;
+      case '?':
+        if (optopt == 'p')
+          fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+        else if (isprint (optopt))
+          fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+        else
+          fprintf (stderr,
+                   "Unknown option character `\\x%x'.\n",
+                   optopt);
+        return 1;
+      default:
+        abort ();
+    }
+  }
+
     pthread_t thread2;
-    
-    if (argc!=1)
- 	{
-		printf("invalid arguments\n");
-		exit(-1);
-	}
     
    init_dsp();
    init_fir2_wrapper();
 
 
 
-   pthread_create( &thread2, (pthread_attr_t *)NULL, scheduler, (void *) NULL ); 
+   pthread_create( &thread2, (pthread_attr_t *)NULL, captureIQ, (void *) NULL ); 
 
-   for(;;)
+   while(1)
    {
 	sleep(61);
    }
