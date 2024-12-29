@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE   
+#define _XOPEN_SOURCE    
 #include <stdio.h>
 #include <string.h>
 #include <cjson/cJSON.h>
@@ -48,6 +48,12 @@ long calculate_time_difference(char *timestamp) {
     return difftime(current_time, given_time);
 }
 
+
+void open_db(sqlite3 **db) {
+        sqlite3_open(DATA_FILE, db);
+}
+
+
 int add_message(char *bbbb, char *message, int freq) {
         char timestamp_str[TS_SIZE];
 
@@ -57,13 +63,12 @@ int add_message(char *bbbb, char *message, int freq) {
 
         get_current_timestamp(timestamp_str);
          
-        sqlite3_open("navtex.db", &db);
+	open_db(&db);
         if (db == NULL)
         {
                 printf("Failed to open DB\n");
                 return -1;
         }
-        
 	sqlite3_prepare_v2(db, "delete from messages where bbbb = ?1 ", -1, &stmt, NULL);
         sqlite3_bind_text(stmt, 1, bbbb, -1, SQLITE_STATIC);
 	sqlite3_step(stmt); 
@@ -96,7 +101,7 @@ cJSON *json = cJSON_CreateArray();
 
 
         purge_old_messages();
-        sqlite3_open("navtex.db", &db);
+        open_db(&db);
         if (db == NULL)
         {
                 printf("Failed to open DB\n");
@@ -117,7 +122,7 @@ cJSON *json = cJSON_CreateArray();
                 {
                         if(strcmp(sqlite3_column_name(stmt,i),"timestamp") == 0)
                         {
-			//	printf("time diff: %ld\n",calculate_time_difference((char*)sqlite3_column_text(stmt, i) ) ) ;
+				//printf("time diff: %ld\n",calculate_time_difference((char*)sqlite3_column_text(stmt, i) ) ) ;
 			}
                         switch (sqlite3_column_type(stmt, i))
                         {
@@ -216,30 +221,45 @@ void purge_old_messages() {
 	int pl_index;
 	long td;
 	int i;
+	int rc;
 
-        sqlite3_open("navtex.db", &db);
+	open_db(&db);
         if (db == NULL)
         {
                 printf("Failed to open DB\n");
 		return;
         }
         pl_index=0;
-        sqlite3_prepare_v2(db, "select id,bbbb,timestamp from messages order by timestamp asc", -1, &stmt, NULL);
+		printf("prepare\n");
+        rc = sqlite3_prepare_v2(db, "select id,bbbb,timestamp from messages order by timestamp asc", -1, &stmt, NULL);
 
-        while ((sqlite3_step(stmt) != SQLITE_DONE) && (pl_index<(99))) {
+	if (rc != SQLITE_OK) {
+       		fprintf(stderr, "Failed to prepare statement: %s\n", sqlite3_errmsg(db));
+        	sqlite3_close(db);
+        	return;
+    	}
+
+        while ((sqlite3_step(stmt) == SQLITE_ROW) && (pl_index<(99))) {
+		
+		printf("about to calc td for id %d\n",sqlite3_column_int(stmt, 0));
+		printf("about to calc td for %s\n",(char*)sqlite3_column_text(stmt, 2));
         	td = calculate_time_difference((char*)sqlite3_column_text(stmt, 2) );
+		printf("calculated td = %d\n",(int)td);
 		if (td > MESSAGE_PURGE_AGE) {
 			purge_list[pl_index]=sqlite3_column_int(stmt, 0);
+			pl_index++;
 		}
-		pl_index++;
         }
         sqlite3_finalize(stmt);
 	i=0;
 	while ( i < pl_index) {
+		printf("want to delete %d \n",purge_list[i]);
+		/*
         	sqlite3_prepare_v2(db, "delete from messages where id = ?1 ", -1, &stmt, NULL);
 		sqlite3_bind_int(stmt, 1,purge_list[i]);
 		sqlite3_step(stmt); 
 		sqlite3_finalize(stmt);
+		*/
 		i++;
         }
 	sqlite3_close(db);
@@ -258,7 +278,7 @@ cJSON *json = cJSON_CreateObject();
         sqlite3 *db;
 
         sqlite3_stmt *stmt;
-        sqlite3_open("navtex.db", &db);
+        open_db(&db);
 
         if (db == NULL)
         {
@@ -309,7 +329,7 @@ cJSON *json = cJSON_CreateArray();
 
         sqlite3 *db;
         sqlite3_stmt *stmt;
-        sqlite3_open("navtex.db", &db);
+        open_db(&db);
 
         if (db == NULL)
         {
@@ -365,7 +385,7 @@ cJSON *json = cJSON_CreateArray();
 
         sqlite3 *db;
         sqlite3_stmt *stmt;
-        sqlite3_open("navtex.db", &db);
+        open_db(&db);
 
         if (db == NULL)
         {
