@@ -79,11 +79,11 @@ extern "C" void init_fir_filter1()
 
 extern "C" void sample_in_1(double sample_I,double sample_Q)
 {
-   register int i;
-   register int conv_buf_ptr;
-   register double conv_sum_I;
-   register double conv_sum_Q;
-   register double filter_coef;
+   int i;
+   int conv_buf_ptr;
+   double conv_sum_I;
+   double conv_sum_Q;
+   double filter_coef;
 
    //buffer_I[buffer_ptr] = sample_I;
    //buffer_Q[buffer_ptr] = sample_Q;
