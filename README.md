@@ -24,3 +24,12 @@ sudo apt-get install libmicrohttpd-dev
 sudo apt-get install sqlite3
 sudo apt-get install autotools-dev autoconf
 
+then git clone this repository and do the following:
+automake --add-missing
+autoreconf
+./configure
+make
+sudo make install
+
+
+
