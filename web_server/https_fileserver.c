@@ -32,13 +32,16 @@
  * @author Sagie Amir
  */
 
+
 //#include "platform.h"
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <microhttpd.h>
 #include <sys/stat.h>
 #include <gnutls/gnutls.h>
-#include <gcrypt.h>
+//#include <gcrypt.h>
 #include "../receiver/message_store.h"
 
 #define BUF_SIZE 1024
@@ -179,14 +182,28 @@ http_ahc (void *cls,
   }
   else 
   {
-    if ( (0 == stat (&url[1], &buf)) &&
-	       (S_ISREG (buf.st_mode)) )
+    if( strcmp(url,"/") == 0)
     {
-	    file = fopen (&url[1], "rb");
+	  file = fopen ("index.html", "r");
+    	  if (file == NULL)
+	  {
+	  }
+	  else
+	  {
+		stat ("index.html", &buf);
+	  }
     }
     else
     {
-	    file = NULL;
+	    if ( (0 == stat (&url[1], &buf)) &&
+		       (S_ISREG (buf.st_mode)) )
+	    {
+		    file = fopen (&url[1], "rb");
+	    }
+	    else
+	    {
+		    file = NULL;
+	    }
     }
 
 
