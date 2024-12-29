@@ -15,7 +15,8 @@ Next to that I created a web-based GUI application for displaying messages. The 
 Note that the sdr code is written exclusively for sdrplay devices. The reason is that these are high quality devices, with a fairly well documented API, and with good developer support.
 
 # Installation
-Before installing this software, make sure to install the sdrplay API
+Before installing this software, make sure to install the sdrplay API  (https://www.sdrplay.com/api/)
+
 
 Also run following commands to install some prerequisites:
 
@@ -28,6 +29,7 @@ sudo apt-get install libmicrohttpd-dev
 sudo apt-get install sqlite3
 
 sudo apt-get install autotools-dev autoconf
+
 
 then git clone this repository and do the following:
 
