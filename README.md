@@ -20,6 +20,7 @@ Before installing this software, make sure to install the sdrplay API
 Also run following commands to install some prerequisites:
 
 sudo apt-get install libcjson-dev
+
 sudo apt-get install libsqlite3-dev
 
 sudo apt-get install libmicrohttpd-dev
