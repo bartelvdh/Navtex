@@ -259,7 +259,7 @@ void *captureIQ(void *prt)
                 // Pick first device of supported type
                 for (i = 0; i < (int)ndev; i++)
                 {
- 		   if ( (devs[i].hwVer == SDRPLAY_RSPdx_ID) ||  (devs[i].hwVer == SDRPLAY_RSP1A_ID) )
+ 		   if ( (devs[i].hwVer == SDRPLAY_RSPdx_ID) ||  (devs[i].hwVer == SDRPLAY_RSP1A_ID) || (devs[i].hwVer == SDRPLAY_RSPdxR2_ID) ||  (devs[i].hwVer == SDRPLAY_RSP1B_ID))
 		   {
                     chosenIdx = i;
                     break;
@@ -314,7 +314,7 @@ void *captureIQ(void *prt)
  		    deviceParams->devParams->mode = sdrplay_api_ISOCH; 
  		    //deviceParams->devParams->mode = sdrplay_api_BULK; 
                     deviceParams->devParams->fsFreq.fsHz = H_SAMPLE_RATE ;
-	            if (chosenDevice->hwVer == SDRPLAY_RSPdx_ID)
+	            if ((chosenDevice->hwVer == SDRPLAY_RSPdx_ID) || (chosenDevice->hwVer == SDRPLAY_RSPdxR2_ID))
 		    {
 			    switch (selectedAntennaPort) {
 				  case 'A':
@@ -333,7 +333,7 @@ void *captureIQ(void *prt)
 			    deviceParams->devParams->rspDxParams.rfDabNotchEnable=1;
 			    deviceParams->devParams->rspDxParams.biasTEnable = biasTflag;
 		    }
-	            if (chosenDevice->hwVer == SDRPLAY_RSP1A_ID)
+	            if ((chosenDevice->hwVer == SDRPLAY_RSP1A_ID) || (chosenDevice->hwVer == SDRPLAY_RSP1B_ID))
 		    {
 			    deviceParams->devParams->rsp1aParams.rfNotchEnable=0;
 			    deviceParams->devParams->rsp1aParams.rfDabNotchEnable=1;
