@@ -33,6 +33,8 @@ sudo apt-get install autotools-dev autoconf
 
 then git clone this repository and do the following:
 
+autoreconf
+
 automake --add-missing
 
 autoreconf
