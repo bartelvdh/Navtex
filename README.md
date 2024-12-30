@@ -18,6 +18,7 @@ Note that the sdr code is written exclusively for sdrplay devices. The reason is
 Before installing this software, make sure to install the sdrplay API version 3.15 or higher (https://www.sdrplay.com/api/)
 
 
+
 Also run following commands to install some prerequisites:
 
 sudo apt-get install libcjson-dev
@@ -31,7 +32,14 @@ sudo apt-get install sqlite3
 sudo apt-get install autotools-dev autoconf
 
 
-then git clone this repository and do the following:
+then git clone this repository:
+
+git clone https://github.com/bartelvdh/Navtex
+
+
+and do the following:
+
+cd Navtex
 
 autoreconf
 
