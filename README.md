@@ -15,7 +15,7 @@ Next to that I created a web-based GUI application for displaying messages. The 
 Note that the sdr code is written exclusively for sdrplay devices. The reason is that these are high quality devices, with a fairly well documented API, and with good developer support.
 
 # Installation
-Before installing this software, make sure to install the sdrplay API version 3.14 or higher (https://www.sdrplay.com/api/)
+Before installing this software, make sure to install the sdrplay API version 3.15 or higher (https://www.sdrplay.com/api/)
 
 
 Also run following commands to install some prerequisites:
