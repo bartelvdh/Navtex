@@ -113,7 +113,7 @@ http_ahc (void *cls,
       MHD_add_response_header(response, "Content-Type", "text/html; charset=UTF-8");
       ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
       MHD_destroy_response (response);
-      free_json_str(ml);
+      free(ml);
   }
   else if( strncmp(url,"/config",6) == 0)
   {
@@ -178,7 +178,7 @@ http_ahc (void *cls,
       MHD_add_response_header(response, "Content-Type", "text/html; charset=UTF-8");
       ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
       MHD_destroy_response (response);
-      free_json_str(mt);
+      free(mt);
   }
   else 
   {

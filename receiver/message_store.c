@@ -201,13 +201,10 @@ cJSON *json = cJSON_CreateArray();
 sqlite3_close(db);
 
 
-// convert the cJSON object to a JSON string
 char *json_str = cJSON_Print(json);
-
-// free the cJSON object
+char *result = strdup(json_str); 
 cJSON_Delete(json);
-
-return json_str;
+return result;
 }
 
 
@@ -296,14 +293,12 @@ cJSON *json = cJSON_CreateObject();
 sqlite3_close(db);
 
 
-// convert the cJSON object to a JSON string
+
+
 char *json_str = cJSON_Print(json);
-
-// free the JSON string and cJSON object
-//cJSON_free(json_str);
+char *result = strdup(json_str); 
 cJSON_Delete(json);
-
-return json_str;
+return result;
 }
 
 
@@ -359,14 +354,10 @@ cJSON *json = cJSON_CreateArray();
 sqlite3_close(db);
 
 
-// convert the cJSON object to a JSON string
 char *json_str = cJSON_Print(json);
-
-// free the JSON string and cJSON object
-//cJSON_free(json_str);
+char *result = strdup(json_str); // Allocate a new copy
 cJSON_Delete(json);
-
-return json_str;
+return result;
 }
 
 
@@ -394,14 +385,11 @@ cJSON *json = cJSON_CreateArray();
 	sqlite3_close(db);
 
 
-// convert the cJSON object to a JSON string
+
 char *json_str = cJSON_Print(json);
-
-// free the JSON string and cJSON object
-//cJSON_free(json_str);
+char *result = strdup(json_str); 
 cJSON_Delete(json);
-
-return json_str;
+return result;
 }
 
 
