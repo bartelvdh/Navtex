@@ -6,6 +6,8 @@
 #include <time.h>
 #include "message_store.h"
 
+extern char* strdup(const char*);
+
 #define TS_SIZE 20
 
 #define MESSAGE_PURGE_AGE 60*60*72  			//72 hours in seconds
@@ -81,12 +83,17 @@ int add_message(char *bbbb, char *message, int freq) {
         sqlite3_bind_int(stmt, 4, freq);
  
 	if (sqlite3_step(stmt) == SQLITE_DONE) 
-	{ return 0; }
+	{ 
+ 	       sqlite3_finalize(stmt);
+		sqlite3_close(db);
+		return 0; 
+	}
 	else
-	{ return -2; }
-        sqlite3_finalize(stmt);
-
-	sqlite3_close(db);
+	{ 
+       		sqlite3_finalize(stmt);
+		sqlite3_close(db);
+		return -2; 
+	}
 }
 
 
@@ -113,7 +120,7 @@ cJSON *json = cJSON_CreateArray();
 
 
 
-        while (sqlite3_step(stmt) != SQLITE_DONE) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
                 int i;
                 int num_cols = sqlite3_column_count(stmt);
 
@@ -276,7 +283,7 @@ cJSON *json = cJSON_CreateObject();
 	sprintf(sql_str,"select message from messages where id=%u",m_id);
         sqlite3_prepare_v2(db, sql_str, -1, &stmt, NULL);
 
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
 		cJSON_AddStringToObject(json, sqlite3_column_name(stmt,0), (const char *) sqlite3_column_text(stmt, 0));
         }
 
@@ -325,7 +332,7 @@ cJSON *json = cJSON_CreateArray();
 
         sqlite3_prepare_v2(db, "select * from config", -1, &stmt, NULL);
 
-        while (sqlite3_step(stmt) != SQLITE_DONE) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
                 int i;
                 int num_cols = sqlite3_column_count(stmt);
 
