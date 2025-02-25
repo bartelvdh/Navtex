@@ -40,7 +40,11 @@ void init_fir2_wrapper();
 //504000
 #define FREQ_TUNER  ((NAVTEX_UPPER+NAVTEX_LOWER)/2)
 
-int in_sample_rate = (int)(IN_SAMPLE_RATE);
+
+short debug_mode;
+
+int in_sample_rate =  (int)(IN_SAMPLE_RATE);
+int wav_sample_rate = (int)(IN_SAMPLE_RATE);
 
 
 int masterInitialised = 0;
@@ -60,6 +64,41 @@ int in_idx, out_idx;
 
 unsigned char biasTflag = 0;
 char selectedAntennaPort = 'A';
+
+
+
+WavFile *fp;
+
+
+
+void generate_random_filename(char *filename) {
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    strcpy(filename,"NT");
+    for (int i = 2; i < 10; i++) {
+        int key = rand() % (sizeof(charset) - 1); // Pick a random index from charset
+        filename[i] = charset[key];
+    }
+    filename[10] = '\0'; // Null-terminate the string
+    strcat(filename,".wav");
+}
+
+
+void PrepWav()
+{
+    char filename[80];
+    generate_random_filename(filename);
+    fp = wav_open(filename, WAV_OPEN_WRITE);
+    wav_set_format(fp, WAV_FORMAT_PCM);
+    wav_set_num_channels(fp, 2);
+    wav_set_sample_rate(fp, wav_sample_rate);
+    wav_set_sample_size(fp, sizeof(short));
+}
+
+void EndWav()
+{
+    wav_close(fp);
+}
+
 
 
 void StreamACallback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params, unsigned int numSamples, unsigned int reset, void *cbContext)
@@ -202,7 +241,8 @@ void *captureIQ(void *prt)
     
     printf("requested Tuner%c Mode=%s\n", (reqTuner == 0)? 'A': 'B', (master_slave == 0)?
                "Single_Tuner": "Master/Slave");
-    
+   
+    num_bytes_to_be_collected = wav_sample_rate* 60*15 *2*sizeof(short);  // *2 for I and Q ; 15 minutes
     // Open API//////////
     if ((err = sdrplay_api_Open()) != sdrplay_api_Success)
     {
@@ -437,6 +477,8 @@ void *captureIQ(void *prt)
 
  	    /////// MAIN CONSUMER LOOP ///////
             int go_on=1;
+	    if(debug_mode) { PrepWav() };
+
 	    while(go_on)
 	    {
 		usleep(50000);
@@ -469,10 +511,18 @@ void *captureIQ(void *prt)
 			} 
 
 
+                         if(debug_mode) {wav_write(fp, (void*)(&sample_buffer[from]), num_samples/2)};
+
+
 			//byte_count += num_bytes;
 			//printf("out_bytecount=%u\n",byte_count);
 		 	out_idx = to;	
 		}		
+                if( (byte_count >= num_bytes_to_be_collected) && go_on)
+                {
+                   go_on=0;
+	    	   if(debug_mode) { EndWav() };
+                }
 	    }
 
 
@@ -512,7 +562,7 @@ int main(int argc, char *argv[])
  char c;
 
   opterr = 0;
-
+  debug_mode=0;
 
   while ((c = getopt (argc, argv, "bp:")) != (char)-1) {
     switch (c)
@@ -520,6 +570,10 @@ int main(int argc, char *argv[])
       case 'b':
         biasTflag = (unsigned char)1;
 	printf("set BiasT active\n");
+        break;
+      case 'd':
+        debug_mode=1;
+	printf("debug mode enabled, wav file of first 15min of IQ samples will be produced\n");
         break;
       case 'p':
         pvalue = optarg;
