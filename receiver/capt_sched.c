@@ -12,6 +12,7 @@
 #include "sdrplay_api.h"
 #include "sdrplay_api_dev.h"
 #include "message_store.h"
+#include "wav.h"
 
 void init_fir_filter1();
 void sample_in_1(double sample_I,double sample_Q);
@@ -230,8 +231,9 @@ void *captureIQ(void *prt)
     sdrplay_api_DeviceParamsT *deviceParams = NULL;
     sdrplay_api_CallbackFnsT cbFns;
     sdrplay_api_RxChannelParamsT *chParams;
-    //unsigned int byte_count = 0;
+    unsigned int byte_count = 0;
     unsigned int num_samples;
+    int num_bytes_to_be_collected; 
 
     int reqTuner = 0;
     int master_slave = 0;
@@ -477,7 +479,7 @@ void *captureIQ(void *prt)
 
  	    /////// MAIN CONSUMER LOOP ///////
             int go_on=1;
-	    if(debug_mode) { PrepWav() };
+	    if(debug_mode) { PrepWav(); }
 
 	    while(go_on)
 	    {
@@ -511,7 +513,7 @@ void *captureIQ(void *prt)
 			} 
 
 
-                         if(debug_mode) {wav_write(fp, (void*)(&sample_buffer[from]), num_samples/2)};
+                         if(debug_mode) {wav_write(fp, (void*)(&sample_buffer[from]), num_samples/2);}
 
 
 			//byte_count += num_bytes;
@@ -521,7 +523,7 @@ void *captureIQ(void *prt)
                 if( (byte_count >= num_bytes_to_be_collected) && go_on)
                 {
                    go_on=0;
-	    	   if(debug_mode) { EndWav() };
+	    	   if(debug_mode) { EndWav(); }
                 }
 	    }
 
