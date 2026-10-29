@@ -8,6 +8,6 @@ AC_CHECK_LIB(sqlite3,sqlite3_open)
 AC_CHECK_LIB(microhttpd,MHD_start_daemon)
 AC_CHECK_LIB(m,atan2)
 AC_CHECK_LIB(sdrplay_api,sdrplay_api_Open)
+AC_CHECK_LIB(rtlsdr,rtlsdr_open)
 AC_CONFIG_FILES([Makefile receiver/Makefile web_server/Makefile])
 AC_OUTPUT
-

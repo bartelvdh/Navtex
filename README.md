@@ -12,16 +12,17 @@ As a sailor you need to be able to receive those messages without being in front
 So I decided to create this background process that allows navtex demodulation and decoding.
 Next to that I created a web-based GUI application for displaying messages. The gui application is based on the react javascript framework. The communication with the backend is via a json based (REST) API. This API is exposed by a lightweight http server in the backend. Communication between the web server and the receiver process runs via an SQLite database.
 
-Note that the sdr code is written exclusively for sdrplay devices. The reason is that these are high quality devices, with a fairly well documented API, and with good developer support.
+The capture code is split into hardware-specific backends and a hardware-independent I/Q pipeline (`receiver/iq_pipeline.c`). The pipeline consumes signed 16-bit I/Q samples and feeds the existing DSP and optional debug WAV recording. SDRplay is the default backend; select RTL-SDR Blog V4 with `-r`. Building the RTL-SDR backend requires `librtlsdr-dev`, and runtime use requires a V4-capable `librtlsdr` build. The backend selects a device identifying itself as manufacturer `RTLSDRBlog` and product `Blog V4`; the V4-capable library handles its HF upconverter when tuned to 504 kHz. See the [RTL-SDR Blog driver](https://github.com/rtlsdrblog/rtl-sdr-blog-minimal) for V4-compatible library installation instructions.
 
 # Installation
-Before installing this software, make sure to install the sdrplay API version 3.15 or higher (https://www.sdrplay.com/api/)
+The build currently includes both capture backends, so install the SDRplay API version 3.15 or higher (https://www.sdrplay.com/api/) and the RTL-SDR development library. The RTL-SDR Blog V4 backend also needs a V4-capable `librtlsdr` at runtime.
 
 
 
 Also run following commands to install some prerequisites:
 
 sudo apt-get install libcjson-dev
+sudo apt-get install librtlsdr-dev
 
 sudo apt-get install libsqlite3-dev
 
@@ -53,5 +54,4 @@ make
 
 sudo make install
 
-
-
+The receiver uses SDRplay by default. Run `navtexreceiver -r` to select an RTL-SDR Blog V4; `-d` enables the 15-minute I/Q WAV recording for either backend. The SDRplay-only options `-b` and `-p` cannot be combined with `-r`.
