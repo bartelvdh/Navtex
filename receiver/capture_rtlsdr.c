@@ -113,6 +113,15 @@ void *capture_rtlsdr(void *options)
     }
     callback_context.device = device;
 
+    if (rtlsdr_set_bias_tee(device, capture_options->bias_t != 0) != 0) {
+        fprintf(stderr, "Unable to %s RTL-SDR bias tee\n",
+                capture_options->bias_t ? "enable" : "disable");
+        goto cleanup;
+    }
+    if (capture_options->bias_t) {
+        fprintf(stderr, "RTL-SDR bias tee enabled\n");
+    }
+
     if (rtlsdr_set_sample_rate(device, IQ_SAMPLE_RATE) != 0) {
         fprintf(stderr, "Unable to set RTL-SDR sample rate to %u Hz\n", IQ_SAMPLE_RATE);
         goto cleanup;

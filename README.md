@@ -54,4 +54,4 @@ make
 
 sudo make install
 
-The receiver uses SDRplay by default. Run `navtexreceiver -r` to select an RTL-SDR Blog V4; `-d` enables the 15-minute I/Q WAV recording for either backend. The SDRplay-only options `-b` and `-p` cannot be combined with `-r`.
+The receiver uses SDRplay by default. Run `navtexreceiver -r` to select an RTL-SDR Blog V4; `-d` enables the 15-minute I/Q WAV recording, and `-b` enables the bias tee for SDRPLAY or RTL-SDR devices. The antenna-port option `-p` is SDRplay-only and cannot be combined with `-r`.

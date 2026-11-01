@@ -76,7 +76,11 @@ extern "C" void init_fir_filter1()
    }
 }
 
-
+ /*
+ * Processes a new I/Q sample, applies FIR filtering and decimation, and passes the result to sample_in_2.
+ * @param sample_I The in-phase (I) component of the sample.
+ * @param sample_Q The quadrature (Q) component of the sample.
+ */
 extern "C" void sample_in_1(double sample_I,double sample_Q)
 {
    int i;
@@ -98,7 +102,7 @@ extern "C" void sample_in_1(double sample_I,double sample_Q)
 	   conv_sum_Q = 0.0;
 	   conv_buf_ptr = buffer_ptr;
 
-	   if (buffer_ptr > FILTER_SIZE)
+	   if (conv_buf_ptr > FILTER_SIZE)
 	   {
 		   for(i=0; i < FILTER_SIZE; i++)
 		   {
@@ -131,8 +135,7 @@ extern "C" void sample_in_1(double sample_I,double sample_Q)
 	   decimation_count = 0;
    }
 
-   buffer_ptr++;
-   buffer_ptr %= FIR_FILTER_BUFFER_SIZE_1;
+   buffer_ptr = (buffer_ptr + 1) % FIR_FILTER_BUFFER_SIZE_1;
 }
 
 

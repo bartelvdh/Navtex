@@ -23,14 +23,13 @@ int main(int argc, char *argv[])
     pthread_t capture_thread;
     char c;
     int use_rtlsdr = 0;
-    int sdrplay_options_used = 0;
+    int antenna_option_used = 0;
 
     opterr = 0;
     while ((c = (char)getopt(argc, argv, "brdp:")) != (char)-1) {
         switch (c) {
         case 'b':
             options.bias_t = 1;
-            sdrplay_options_used = 1;
             printf("set BiasT active\n");
             break;
         case 'r':
@@ -41,7 +40,7 @@ int main(int argc, char *argv[])
             printf("debug mode enabled; a WAV file of the first 15 minutes of I/Q samples will be produced\n");
             break;
         case 'p':
-            sdrplay_options_used = 1;
+            antenna_option_used = 1;
             if (strcmp(optarg, "A") == 0) {
                 options.antenna_port = 'A';
             } else if (strcmp(optarg, "B") == 0) {
@@ -68,8 +67,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (use_rtlsdr && sdrplay_options_used) {
-        fprintf(stderr, "Options -b and -p are only supported by the SDRplay backend\n");
+    if (use_rtlsdr && antenna_option_used) {
+        fprintf(stderr, "Option -p is only supported by the SDRplay backend\n");
         return 1;
     }
 
