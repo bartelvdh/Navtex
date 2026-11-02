@@ -34,13 +34,13 @@ static int find_rtlsdr_blog_v4(uint32_t *device_index)
         }
 
         if (strcmp(manufacturer, "RTLSDRBlog") == 0 &&
-            strcmp(product, "Blog V4") == 0) {
+            strcmp(product, "Blog V4L") == 0) {
             *device_index = i;
             return 0;
         }
     }
 
-    fprintf(stderr, "No RTL-SDR Blog V4 device found\n");
+    fprintf(stderr, "No RTL-SDR Blog V4L device found\n");
     return -1;
 }
 
