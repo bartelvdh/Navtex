@@ -113,6 +113,11 @@ void *capture_rtlsdr(void *options)
     }
     callback_context.device = device;
 
+    if (rtlsdr_set_direct_sampling(device, 0) != 0) {
+        fprintf(stderr, "Unable to disable RTL-SDR direct sampling mode\n");
+        goto cleanup;
+    }
+
     if (rtlsdr_set_bias_tee(device, capture_options->bias_t != 0) != 0) {
         fprintf(stderr, "Unable to %s RTL-SDR bias tee\n",
                 capture_options->bias_t ? "enable" : "disable");
