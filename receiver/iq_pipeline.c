@@ -18,6 +18,7 @@ static unsigned int buffer_size;
 static unsigned int in_idx;
 static unsigned int out_idx;
 static int sample_rate;
+static int stop_requested;
 
 static void generate_random_filename(char *filename)
 {
@@ -49,6 +50,7 @@ int iq_pipeline_init(int configured_sample_rate)
     sample_rate = configured_sample_rate;
     in_idx = 1;
     out_idx = 1;
+    stop_requested = 0;
     return 0;
 }
 
@@ -95,10 +97,12 @@ void iq_pipeline_run(int debug_mode)
 
     for (;;) {
         unsigned int current_in_idx;
+        int should_stop;
 
         usleep(50000);
         pthread_mutex_lock(&buffer_mutex);
         current_in_idx = in_idx;
+        should_stop = stop_requested;
         pthread_mutex_unlock(&buffer_mutex);
 
         while (out_idx != current_in_idx) {
@@ -143,7 +147,22 @@ void iq_pipeline_run(int debug_mode)
 
             out_idx = to;
         }
+
+        if (should_stop) {
+            break;
+        }
     }
+
+    if (wav_file != NULL) {
+        wav_close(wav_file);
+    }
+}
+
+void iq_pipeline_stop(void)
+{
+    pthread_mutex_lock(&buffer_mutex);
+    stop_requested = 1;
+    pthread_mutex_unlock(&buffer_mutex);
 }
 
 void iq_pipeline_destroy(void)

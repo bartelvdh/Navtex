@@ -6,6 +6,9 @@
 #include "sdrplay_api_dev.h"
 #include "capture_sdrplay.h"
 #include "iq_pipeline.h"
+#include "capture_options.h"
+
+#define SDRPLAY_RETRY_DELAY_SECONDS 60
 
 ///////////// NAVTEX/SITOR-B /////////////
 #define NAVTEX_UPPER 518000
@@ -104,6 +107,7 @@ void EventCallback(sdrplay_api_EventT eventId, sdrplay_api_TunerSelectT tuner, s
 
     case sdrplay_api_DeviceRemoved:
         printf("sdrplay_api_EventCb: %s\n", "sdrplay_api_DeviceRemoved");
+        iq_pipeline_stop();
         break;
 
     default:
@@ -114,9 +118,8 @@ void EventCallback(sdrplay_api_EventT eventId, sdrplay_api_TunerSelectT tuner, s
 
 
 
-void *capture_sdrplay(void *prt)
+static void capture_sdrplay_once(const CaptureOptions *options)
 {
-    const CaptureOptions *options = prt;
     sdrplay_api_DeviceT devs[6];
     unsigned int ndev;
     int i;
@@ -131,6 +134,8 @@ void *capture_sdrplay(void *prt)
 
     int reqTuner = 0;
     int master_slave = 0;
+    int device_selected = 0;
+    int device_initialized = 0;
 
     unsigned int chosenIdx = 0;
     
@@ -141,6 +146,7 @@ void *capture_sdrplay(void *prt)
     if ((err = sdrplay_api_Open()) != sdrplay_api_Success)
     {
         printf("sdrplay_api_Open failed %s\n", sdrplay_api_GetErrorString(err));
+        return;
     }
     else
     {
@@ -176,6 +182,11 @@ void *capture_sdrplay(void *prt)
             goto UnlockDeviceAndCloseApi;
         }
         printf("MaxDevs=%zu NumDevs=%u\n", sizeof(devs) / sizeof(sdrplay_api_DeviceT), ndev);
+        if (ndev == 0)
+        {
+            printf("No SDRplay devices found\n");
+            goto UnlockDeviceAndCloseApi;
+        }
         if (ndev > 0)
         {
             for (i = 0; i < (int)ndev; i++)
@@ -214,6 +225,7 @@ void *capture_sdrplay(void *prt)
                 printf("sdrplay_api_SelectDevice failed %s\n", sdrplay_api_GetErrorString(err));
                 goto UnlockDeviceAndCloseApi;
             }
+            device_selected = 1;
 
             // Unlock API now that device is selected
             sdrplay_api_UnlockDeviceApi();
@@ -367,23 +379,48 @@ void *capture_sdrplay(void *prt)
 		}
                     goto CloseApi;
             }
+            device_initialized = 1;
+
 
 
             iq_pipeline_run(debug_mode);
-
-
-
-            // Release device (make it available to other applications)
-            sdrplay_api_ReleaseDevice(chosenDevice);
+            goto CloseApi;
         }
 UnlockDeviceAndCloseApi:
         // Unlock API
         sdrplay_api_UnlockDeviceApi();
 
 CloseApi:
+        if (device_initialized)
+        {
+            if ((err = sdrplay_api_Uninit(chosenDevice->dev)) != sdrplay_api_Success)
+            {
+                printf("sdrplay_api_Uninit failed %s\n", sdrplay_api_GetErrorString(err));
+            }
+        }
+        if (device_selected)
+        {
+            if ((err = sdrplay_api_ReleaseDevice(chosenDevice)) != sdrplay_api_Success)
+            {
+                printf("sdrplay_api_ReleaseDevice failed %s\n", sdrplay_api_GetErrorString(err));
+            }
+        }
         iq_pipeline_destroy();
         // Close API
         sdrplay_api_Close();
+        chosenDevice = NULL;
     }
-    return NULL;
+}
+
+void *capture_sdrplay(void *prt)
+{
+    const CaptureOptions *options = prt;
+
+    for (;;)
+    {
+        capture_sdrplay_once(options);
+        printf("Retrying SDRplay capture in %d seconds\n",
+               SDRPLAY_RETRY_DELAY_SECONDS);
+        sleep(SDRPLAY_RETRY_DELAY_SECONDS);
+    }
 }
