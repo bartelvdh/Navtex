@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "iq_pipeline.h"
@@ -34,6 +35,8 @@ static void generate_random_filename(char *filename)
 
 int iq_pipeline_init(int configured_sample_rate)
 {
+    srand((unsigned int)time(NULL));
+
     if (configured_sample_rate <= 0) {
         fprintf(stderr, "Invalid I/Q sample rate: %d\n", configured_sample_rate);
         return -1;
