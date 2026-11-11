@@ -5,10 +5,10 @@ navtexreceiver_LDADD =  -L/usr/local/lib -lsdrplay_api -lrtlsdr -lcjson -ldl -lm
 navtexreceiver_LDFLAGS =  -pthread 
 #pkgdata_DATA = Navtex.db
 
-navtexdir = /opt/Navtex/
-navtex_DATA = Navtex.db
+navtexdatadir = $(datadir)/navtex
+nodist_navtexdata_DATA = Navtex.db
 
-AM_CPPFLAGS = -DDATA_FILE=\"/opt/Navtex/Navtex.db\"
+AM_CPPFLAGS = -DDATA_FILE=\"/var/lib/navtex/Navtex.db\"
 
 
 # Distribute the script with the source package
@@ -19,9 +19,4 @@ all-local: Navtex.db
 
 Navtex.db:
 	@echo "Generating empty SQLite database..."
-	./generate_db.sh
-
-# Ensure the database is generated before installation
-install-data-hook: all-local
-	@chmod 666 $(navtexdir)/Navtex.db
-	@chmod 777 $(navtexdir)
+	$(srcdir)/generate_db.sh

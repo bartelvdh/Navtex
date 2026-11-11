@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if ! getent group navtex >/dev/null; then
+            addgroup --system --quiet navtex
+        fi
+        if ! getent passwd navtex >/dev/null; then
+            adduser --system --quiet --no-create-home --ingroup navtex \
+                --disabled-login --disabled-password navtex
+        fi
+
+        install -d -o navtex -g navtex -m 0750 /var/lib/navtex
+        if [ ! -e /var/lib/navtex/Navtex.db ]; then
+            install -o navtex -g navtex -m 0640 \
+                /usr/share/navtex/Navtex.db /var/lib/navtex/Navtex.db
+        fi
+        chown navtex:navtex /var/lib/navtex/Navtex.db
+        chmod 0640 /var/lib/navtex/Navtex.db
+        ;;
+esac
+
+#DEBHELPER#

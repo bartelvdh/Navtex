@@ -1,0 +1,32 @@
+Source: navtex
+Section: sailing
+Priority: optional
+Maintainer: Bartel Van Der Haegen <bartel@vdhaes.be>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-autoreconf,
+ autoconf,
+ automake,
+ autotools-dev,
+ libcjson-dev,
+ libgnutls28-dev,
+ libmicrohttpd-dev,
+ librtlsdr-dev,
+ libsqlite3-dev,
+ sqlite3
+Standards-Version: 4.7.2
+Homepage: https://github.com/bartelvdh/Navtex
+Rules-Requires-Root: no
+
+Package: navtex
+Architecture: arm64
+Depends:
+ adduser,
+ ${misc:Depends},
+ ${shlibs:Depends}
+Description: NAVTEX receiver and web interface
+ Background NAVTEX receiver for SDRplay and RTL-SDR devices, with a web
+ interface for browsing received messages and changing receiver settings.
+ .
+ The SDRplay API is a vendor-provided prerequisite and must be installed
+ separately before installing this package.

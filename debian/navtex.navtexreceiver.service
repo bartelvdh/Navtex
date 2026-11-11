@@ -1,0 +1,19 @@
+[Unit]
+Description=Navtex SDR receiver
+After=network.target
+
+[Service]
+Type=simple
+User=navtex
+Group=navtex
+StateDirectory=navtex
+StateDirectoryMode=0750
+ExecStart=/usr/bin/navtexreceiver
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
