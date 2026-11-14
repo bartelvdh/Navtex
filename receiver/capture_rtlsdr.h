@@ -1,6 +1,8 @@
 #ifndef CAPTURE_RTLSDR_H
 #define CAPTURE_RTLSDR_H
 
-void *capture_rtlsdr(void *options);
+#include "capture_options.h"
+
+int capture_rtlsdr(const CaptureOptions *options);
 
 #endif

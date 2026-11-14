@@ -3,6 +3,6 @@
 
 #include "capture_options.h"
 
-void *capture_sdrplay(void *options);
+int capture_sdrplay(const CaptureOptions *options);
 
 #endif

@@ -19,7 +19,7 @@ typedef struct {
     int has_pending_i;
 } RtlSdrCallbackContext;
 
-static int find_rtlsdr_blog_v4(uint32_t *device_index)
+static int find_rtlsdr_blog_v4(uint32_t *device_index, int report_errors)
 {
     uint32_t device_count = rtlsdr_get_device_count();
 
@@ -29,7 +29,9 @@ static int find_rtlsdr_blog_v4(uint32_t *device_index)
         char serial[USB_STRING_SIZE] = {0};
 
         if (rtlsdr_get_device_usb_strings(i, manufacturer, product, serial) != 0) {
-            fprintf(stderr, "Unable to read USB identity for RTL-SDR device %u\n", i);
+            if (report_errors) {
+                fprintf(stderr, "Unable to read USB identity for RTL-SDR device %u\n", i);
+            }
             continue;
         }
 
@@ -40,7 +42,9 @@ static int find_rtlsdr_blog_v4(uint32_t *device_index)
         }
     }
 
-    fprintf(stderr, "No RTL-SDR Blog V4L device found\n");
+    if (report_errors) {
+        fprintf(stderr, "No RTL-SDR Blog V4L device found\n");
+    }
     return -1;
 }
 
@@ -89,27 +93,29 @@ static void *read_rtlsdr_samples(void *context)
     if (result != 0) {
         fprintf(stderr, "RTL-SDR asynchronous capture failed (error %d)\n", result);
     }
+    iq_pipeline_stop();
     return NULL;
 }
 
-void *capture_rtlsdr(void *options)
+int capture_rtlsdr(const CaptureOptions *capture_options)
 {
-    const CaptureOptions *capture_options = options;
     uint32_t device_index;
     rtlsdr_dev_t *device = NULL;
     RtlSdrCallbackContext callback_context = {0};
     pthread_t reader_thread;
     int thread_error;
     int result;
+    int pipeline_initialized = 0;
+    int capture_started = 0;
 
-    if (find_rtlsdr_blog_v4(&device_index) != 0) {
-        return NULL;
+    if (find_rtlsdr_blog_v4(&device_index, 1) != 0) {
+        return 0;
     }
 
     result = rtlsdr_open(&device, device_index);
     if (result != 0) {
         fprintf(stderr, "Unable to open RTL-SDR Blog V4 (error %d)\n", result);
-        return NULL;
+        return 0;
     }
     callback_context.device = device;
 
@@ -145,10 +151,10 @@ void *capture_rtlsdr(void *options)
     if (iq_pipeline_init((int)IQ_SAMPLE_RATE) != 0) {
         goto cleanup;
     }
+    pipeline_initialized = 1;
 
     if (rtlsdr_reset_buffer(device) != 0) {
         fprintf(stderr, "Unable to reset RTL-SDR sample buffer\n");
-        iq_pipeline_destroy();
         goto cleanup;
     }
 
@@ -159,15 +165,23 @@ void *capture_rtlsdr(void *options)
     if (thread_error != 0) {
         fprintf(stderr, "Unable to start RTL-SDR reader thread: %s\n",
                 strerror(thread_error));
-        iq_pipeline_destroy();
         goto cleanup;
     }
 
     iq_pipeline_run(capture_options->debug_mode);
+    thread_error = pthread_join(reader_thread, NULL);
+    if (thread_error != 0) {
+        fprintf(stderr, "Unable to join RTL-SDR reader thread: %s\n",
+                strerror(thread_error));
+    }
+    capture_started = 1;
 
 cleanup:
+    if (pipeline_initialized) {
+        iq_pipeline_destroy();
+    }
     if (rtlsdr_close(device) != 0) {
         fprintf(stderr, "Unable to close RTL-SDR device cleanly\n");
     }
-    return NULL;
+    return capture_started;
 }

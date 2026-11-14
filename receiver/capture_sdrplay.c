@@ -8,8 +8,6 @@
 #include "iq_pipeline.h"
 #include "capture_options.h"
 
-#define SDRPLAY_RETRY_DELAY_SECONDS 60
-
 ///////////// NAVTEX/SITOR-B /////////////
 #define NAVTEX_UPPER 518000
 #define NAVTEX_LOWER 490000
@@ -117,8 +115,7 @@ void EventCallback(sdrplay_api_EventT eventId, sdrplay_api_TunerSelectT tuner, s
 }
 
 
-
-static void capture_sdrplay_once(const CaptureOptions *options)
+int capture_sdrplay(const CaptureOptions *options)
 {
     sdrplay_api_DeviceT devs[6];
     unsigned int ndev;
@@ -136,6 +133,7 @@ static void capture_sdrplay_once(const CaptureOptions *options)
     int master_slave = 0;
     int device_selected = 0;
     int device_initialized = 0;
+    int capture_started = 0;
 
     unsigned int chosenIdx = 0;
     
@@ -146,7 +144,7 @@ static void capture_sdrplay_once(const CaptureOptions *options)
     if ((err = sdrplay_api_Open()) != sdrplay_api_Success)
     {
         printf("sdrplay_api_Open failed %s\n", sdrplay_api_GetErrorString(err));
-        return;
+        return 0;
     }
     else
     {
@@ -380,8 +378,7 @@ static void capture_sdrplay_once(const CaptureOptions *options)
                     goto CloseApi;
             }
             device_initialized = 1;
-
-
+            capture_started = 1;
 
             iq_pipeline_run(debug_mode);
             goto CloseApi;
@@ -410,17 +407,5 @@ CloseApi:
         sdrplay_api_Close();
         chosenDevice = NULL;
     }
-}
-
-void *capture_sdrplay(void *prt)
-{
-    const CaptureOptions *options = prt;
-
-    for (;;)
-    {
-        capture_sdrplay_once(options);
-        printf("Retrying SDRplay capture in %d seconds\n",
-               SDRPLAY_RETRY_DELAY_SECONDS);
-        sleep(SDRPLAY_RETRY_DELAY_SECONDS);
-    }
+    return capture_started;
 }

@@ -9,6 +9,8 @@
 #include "capture_rtlsdr.h"
 #include "capture_sdrplay.h"
 
+#define CAPTURE_RETRY_DELAY_SECONDS 60
+
 void init_fir_filter1(void);
 void init_fir2_wrapper(void);
 
@@ -17,23 +19,69 @@ void init_dsp(void)
     init_fir_filter1();
 }
 
+static int capture_preferred_backend(const CaptureOptions *options)
+{
+    if (options->backend == CAPTURE_BACKEND_RTLSDR) {
+        return capture_rtlsdr(options);
+    }
+    return capture_sdrplay(options);
+}
+
+static void *capture_devices(void *context)
+{
+    const CaptureOptions *options = context;
+
+    for (;;) {
+        int capture_started;
+
+        if (options->backend == CAPTURE_BACKEND_AUTO) {
+            CaptureOptions rtl_options = *options;
+            rtl_options.backend = CAPTURE_BACKEND_RTLSDR;
+            capture_started = capture_rtlsdr(&rtl_options);
+            if (capture_started) {
+                capture_started = capture_sdrplay(options);
+                if (capture_started) {
+                    capture_rtlsdr(&rtl_options);
+                }
+            } else {
+                capture_started = capture_sdrplay(options);
+                if (capture_started) {
+                    capture_rtlsdr(&rtl_options);
+                }
+            }
+        } else {
+            capture_preferred_backend(options);
+        }
+
+        fprintf(stderr, "Retrying hardware detection in %d seconds\n",
+                CAPTURE_RETRY_DELAY_SECONDS);
+        sleep(CAPTURE_RETRY_DELAY_SECONDS);
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    CaptureOptions options = {0, 0, 'A'};
+    CaptureOptions options = {0, 0, 'A', CAPTURE_BACKEND_AUTO};
     pthread_t capture_thread;
     char c;
-    int use_rtlsdr = 0;
+    int rtl_option_used = 0;
+    int sdrplay_option_used = 0;
     int antenna_option_used = 0;
 
     opterr = 0;
-    while ((c = (char)getopt(argc, argv, "brdp:")) != (char)-1) {
+    while ((c = (char)getopt(argc, argv, "brsdp:")) != (char)-1) {
         switch (c) {
         case 'b':
             options.bias_t = 1;
             printf("set BiasT active\n");
             break;
         case 'r':
-            use_rtlsdr = 1;
+            rtl_option_used = 1;
+            options.backend = CAPTURE_BACKEND_RTLSDR;
+            break;
+        case 's':
+            sdrplay_option_used = 1;
+            options.backend = CAPTURE_BACKEND_SDRPLAY;
             break;
         case 'd':
             options.debug_mode = 1;
@@ -67,16 +115,23 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (use_rtlsdr && antenna_option_used) {
+    if (rtl_option_used && sdrplay_option_used) {
+        fprintf(stderr, "Options -r and -s cannot be used together\n");
+        return 1;
+    }
+
+    if (rtl_option_used && antenna_option_used) {
         fprintf(stderr, "Option -p is only supported by the SDRplay backend\n");
         return 1;
+    }
+    if (antenna_option_used && options.backend == CAPTURE_BACKEND_AUTO) {
+        options.backend = CAPTURE_BACKEND_SDRPLAY;
     }
 
     init_dsp();
     init_fir2_wrapper();
 
-    void *(*capture_function)(void *) = use_rtlsdr ? capture_rtlsdr : capture_sdrplay;
-    int thread_error = pthread_create(&capture_thread, NULL, capture_function, &options);
+    int thread_error = pthread_create(&capture_thread, NULL, capture_devices, &options);
     if (thread_error != 0) {
         fprintf(stderr, "Unable to start capture thread: %s\n",
                 strerror(thread_error));
