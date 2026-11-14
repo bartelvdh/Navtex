@@ -11,6 +11,12 @@ case "$1" in
                 --disabled-login --disabled-password navtex
         fi
 
+        if getent group plugdev >/dev/null; then
+            adduser --quiet navtex plugdev
+        else
+            echo "navtex: plugdev group not found; configure RTL-SDR USB permissions for the navtex user if needed." >&2
+        fi
+
         install -d -o navtex -g navtex -m 0750 /var/lib/navtex
         if [ ! -e /var/lib/navtex/Navtex.db ]; then
             install -o navtex -g navtex -m 0640 \

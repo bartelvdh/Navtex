@@ -17,7 +17,7 @@ The capture code is split into hardware-specific backends and a hardware-indepen
 The receiver and web server use the SQLite database at `/var/lib/navtex/Navtex.db`. Debian packages install a database template under `/usr/share/navtex` and initialize the writable database on first installation.
 
 # Debian package (arm64)
-The Debian package installs the programs as systemd services running under a dedicated `navtex` user. It stores the web interface in `/usr/share/navtex/www` and keeps the writable database in `/var/lib/navtex`.
+The Debian package installs the programs as systemd services running under a dedicated `navtex` user. If the `plugdev` group exists, package setup adds `navtex` to it so the service can access RTL-SDR devices whose udev permissions use that group. On systems with different RTL-SDR udev permissions, grant the service user access to the device's configured group. The package stores the web interface in `/usr/share/navtex/www` and keeps the writable database in `/var/lib/navtex`.
 
 Install the SDRplay API version 3.15 or newer using SDRplay's package before installing Navtex. The API is a vendor-provided prerequisite and is not included in the Navtex package's Debian dependency metadata.
 
