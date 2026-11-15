@@ -1,6 +1,8 @@
 /* SDRplay-specific capture backend. */
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "sdrplay_api.h"
 #include "sdrplay_api_dev.h"
@@ -28,6 +30,116 @@ int masterInitialised = 0;
 int slaveUninitialised = 0;
 
 sdrplay_api_DeviceT *chosenDevice = NULL;
+
+#define SDRPLAY_API_FUNCTIONS(X) \
+    X(Open) \
+    X(Close) \
+    X(ApiVersion) \
+    X(GetErrorString) \
+    X(LockDeviceApi) \
+    X(GetDevices) \
+    X(SelectDevice) \
+    X(UnlockDeviceApi) \
+    X(GetDeviceParams) \
+    X(Init) \
+    X(Update) \
+    X(Uninit) \
+    X(ReleaseDevice)
+
+#define DECLARE_SDRPLAY_FUNCTION(name) \
+    __typeof__(&sdrplay_api_##name) name;
+
+typedef struct {
+    SDRPLAY_API_FUNCTIONS(DECLARE_SDRPLAY_FUNCTION)
+} SdrplayApiFunctions;
+
+#undef DECLARE_SDRPLAY_FUNCTION
+
+static SdrplayApiFunctions sdrplay_api;
+static void *sdrplay_api_library;
+
+#define LOAD_SDRPLAY_FUNCTION(name) \
+    do { \
+        const char *symbol_name = "sdrplay_api_" #name; \
+        dlerror(); \
+        void *symbol = dlsym(sdrplay_api_library, symbol_name); \
+        const char *error = dlerror(); \
+        if (error != NULL) { \
+            fprintf(stderr, "Unable to load SDRplay API symbol %s: %s\n", \
+                    symbol_name, error); \
+            goto load_failed; \
+        } \
+        sdrplay_api.name = (__typeof__(sdrplay_api.name))symbol; \
+    } while (0)
+
+#define sdrplay_api_Open (sdrplay_api.Open)
+#define sdrplay_api_Close (sdrplay_api.Close)
+#define sdrplay_api_ApiVersion (sdrplay_api.ApiVersion)
+#define sdrplay_api_GetErrorString (sdrplay_api.GetErrorString)
+#define sdrplay_api_LockDeviceApi (sdrplay_api.LockDeviceApi)
+#define sdrplay_api_GetDevices (sdrplay_api.GetDevices)
+#define sdrplay_api_SelectDevice (sdrplay_api.SelectDevice)
+#define sdrplay_api_UnlockDeviceApi (sdrplay_api.UnlockDeviceApi)
+#define sdrplay_api_GetDeviceParams (sdrplay_api.GetDeviceParams)
+#define sdrplay_api_Init (sdrplay_api.Init)
+#define sdrplay_api_Update (sdrplay_api.Update)
+#define sdrplay_api_Uninit (sdrplay_api.Uninit)
+#define sdrplay_api_ReleaseDevice (sdrplay_api.ReleaseDevice)
+
+static int load_sdrplay_api(void)
+{
+    static const char *const library_names[] = {
+        "libsdrplay_api.so.3",
+        "libsdrplay_api.so",
+        "/usr/local/lib/libsdrplay_api.so.3",
+        "/usr/local/lib/libsdrplay_api.so"
+    };
+    char load_error[512] = "not found";
+
+    for (size_t i = 0; i < sizeof(library_names) / sizeof(library_names[0]); i++) {
+        dlerror();
+        sdrplay_api_library = dlopen(library_names[i], RTLD_NOW | RTLD_LOCAL);
+        if (sdrplay_api_library != NULL) {
+            break;
+        }
+        const char *error = dlerror();
+        snprintf(load_error, sizeof(load_error), "%s",
+                 error != NULL ? error : "not found");
+    }
+
+    if (sdrplay_api_library == NULL) {
+        fprintf(stderr, "SDRplay API unavailable; unable to load library: %s\n",
+                load_error);
+        return -1;
+    }
+
+#define LOAD_FUNCTION(name) LOAD_SDRPLAY_FUNCTION(name);
+    SDRPLAY_API_FUNCTIONS(LOAD_FUNCTION)
+#undef LOAD_FUNCTION
+
+    return 0;
+
+load_failed:
+    memset(&sdrplay_api, 0, sizeof(sdrplay_api));
+    if (dlclose(sdrplay_api_library) != 0) {
+        const char *error = dlerror();
+        fprintf(stderr, "Unable to close incomplete SDRplay API library: %s\n",
+                error != NULL ? error : "unknown error");
+    }
+    sdrplay_api_library = NULL;
+    return -1;
+}
+
+static void unload_sdrplay_api(void)
+{
+    memset(&sdrplay_api, 0, sizeof(sdrplay_api));
+    if (dlclose(sdrplay_api_library) != 0) {
+        const char *error = dlerror();
+        fprintf(stderr, "Unable to close SDRplay API library: %s\n",
+                error != NULL ? error : "unknown error");
+    }
+    sdrplay_api_library = NULL;
+}
 
 void StreamACallback(short *xi, short *xq, sdrplay_api_StreamCbParamsT *params, unsigned int numSamples, unsigned int reset, void *cbContext)
 {
@@ -140,10 +252,15 @@ int capture_sdrplay(const CaptureOptions *options)
     printf("requested Tuner%c Mode=%s\n", (reqTuner == 0)? 'A': 'B', (master_slave == 0)?
                "Single_Tuner": "Master/Slave");
 
+    if (load_sdrplay_api() != 0) {
+        return 0;
+    }
+
     // Open API//////////
     if ((err = sdrplay_api_Open()) != sdrplay_api_Success)
     {
         printf("sdrplay_api_Open failed %s\n", sdrplay_api_GetErrorString(err));
+        unload_sdrplay_api();
         return 0;
     }
     else
@@ -407,5 +524,6 @@ CloseApi:
         sdrplay_api_Close();
         chosenDevice = NULL;
     }
+    unload_sdrplay_api();
     return capture_started;
 }

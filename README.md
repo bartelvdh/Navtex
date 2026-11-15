@@ -19,7 +19,7 @@ The receiver and web server use the SQLite database at `/var/lib/navtex/Navtex.d
 # Debian package (arm64)
 The Debian package installs the programs as systemd services running under a dedicated `navtex` user. If the `plugdev` group exists, package setup adds `navtex` to it so the service can access RTL-SDR devices whose udev permissions use that group. On systems with different RTL-SDR udev permissions, grant the service user access to the device's configured group. The package stores the web interface in `/usr/share/navtex/www` and keeps the writable database in `/var/lib/navtex`.
 
-Install the SDRplay API version 3.15 or newer using SDRplay's package before installing Navtex. The API is a vendor-provided prerequisite and is not included in the Navtex package's Debian dependency metadata.
+The SDRplay API version 3.15 or newer is loaded at runtime only when using an SDRplay device. It is not bundled with the package; install it from SDRplay if you use SDRplay hardware. RTL-SDR users do not need the SDRplay runtime library. Building from source still requires the SDRplay development headers.
 
 On an arm64 Debian or Raspberry Pi OS build environment, install the Debian build dependencies:
 
@@ -29,7 +29,7 @@ sudo apt install build-essential debhelper dh-autoreconf autoconf automake \
   librtlsdr-dev libsqlite3-dev sqlite3
 ```
 
-Also install the SDRplay API development files from SDRplay, then build the package with:
+Install the SDRplay development files from SDRplay to obtain the headers needed for building, then build the package with:
 
 ```sh
 dpkg-buildpackage -us -uc -b
@@ -38,7 +38,7 @@ dpkg-buildpackage -us -uc -b
 Install the resulting `navtex` `.deb` with `apt` or `dpkg`. The package enables and starts both services; check them with `systemctl status navtexreceiver navtexwebserver`. The web interface listens on port 8080.
 
 # Installation
-The build currently includes both capture backends, so install the SDRplay API version 3.15 or higher (https://www.sdrplay.com/api/) and the RTL-SDR development library. The RTL-SDR Blog V4 backend also needs a V4-capable `librtlsdr` at runtime.
+The build includes both capture backends, so building from source requires the SDRplay API 3.15 or newer development headers and the RTL-SDR development library. At runtime, install the SDRplay API only if using SDRplay. The RTL-SDR Blog V4 backend also needs a V4-capable `librtlsdr`.
 
 
 

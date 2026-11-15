@@ -28,5 +28,5 @@ Description: NAVTEX receiver and web interface
  Background NAVTEX receiver for SDRplay and RTL-SDR devices, with a web
  interface for browsing received messages and changing receiver settings.
  .
- The SDRplay API is a vendor-provided prerequisite and must be installed
- separately before installing this package.
+ The SDRplay API is needed only when using an SDRplay device and must be
+ installed separately. RTL-SDR users do not need the SDRplay runtime.

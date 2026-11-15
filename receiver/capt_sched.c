@@ -32,23 +32,11 @@ static void *capture_devices(void *context)
     const CaptureOptions *options = context;
 
     for (;;) {
-        int capture_started;
-
         if (options->backend == CAPTURE_BACKEND_AUTO) {
             CaptureOptions rtl_options = *options;
             rtl_options.backend = CAPTURE_BACKEND_RTLSDR;
-            capture_started = capture_rtlsdr(&rtl_options);
-            if (capture_started) {
-                capture_started = capture_sdrplay(options);
-                if (capture_started) {
-                    capture_rtlsdr(&rtl_options);
-                }
-            } else {
-                capture_started = capture_sdrplay(options);
-                if (capture_started) {
-                    capture_rtlsdr(&rtl_options);
-                }
-            }
+            capture_rtlsdr(&rtl_options);
+            capture_sdrplay(options);
         } else {
             capture_preferred_backend(options);
         }
