@@ -41,16 +41,26 @@ Install the resulting `navtex` `.deb` with `apt` or `dpkg`. The package enables 
 The build includes both capture backends, so building from source requires the SDRplay API 3.15 or newer development headers and the RTL-SDR development library. At runtime, install the SDRplay API only if using SDRplay. The RTL-SDR Blog V4 backend also needs a V4-capable `librtlsdr`.
 
 These are the instructions to install updated drivers for the RTL-SDR Blog V4 (and V4L):
+
 sudo apt update 
+
 sudo apt install libusb-1.0-0-dev git cmake build-essential 
 pkg-config build-essential 
+
 sudo apt install debhelper  
+
 git clone https://github.com/osmocom/rtl-sdr 
+
 cd rtl-sdr 
+
 sudo dpkg-buildpackage -b --no-sign 
+
 cd ..  
+
 sudo dpkg -i librtlsdr0_*.deb 
+
 sudo dpkg -i librtlsdr-dev_*.deb 
+
 sudo dpkg -i rtl-sdr_*.deb
 
 
@@ -58,9 +68,13 @@ sudo dpkg -i rtl-sdr_*.deb
 Also run following commands to install some prerequisites:
 
 sudo apt-get install libcjson-dev
+
 sudo apt-get install libsqlite3-dev
+
 sudo apt-get install libmicrohttpd-dev
+
 sudo apt-get install sqlite3
+
 sudo apt-get install autotools-dev autoconf
 
 
