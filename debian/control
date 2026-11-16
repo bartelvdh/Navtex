@@ -20,8 +20,9 @@ Rules-Requires-Root: no
 
 Package: navtex
 Architecture: arm64
+Pre-Depends:
+ adduser
 Depends:
- adduser,
  ${misc:Depends},
  ${shlibs:Depends}
 Description: NAVTEX receiver and web interface
