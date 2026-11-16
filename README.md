@@ -20,28 +20,19 @@ The receiver and web server use an SQLite database to communicate.
 
 This is needed for all of the build or installation options found below
 
-
+```sh
 sudo apt update 
-
 sudo apt install libusb-1.0-0-dev git cmake build-essential 
-
 pkg-config build-essential 
-
 sudo apt install debhelper  
-
 git clone https://github.com/osmocom/rtl-sdr 
-
 cd rtl-sdr 
-
 sudo dpkg-buildpackage -b --no-sign 
-
 cd ..  
-
 sudo dpkg -i librtlsdr0_*.deb 
-
 sudo dpkg -i librtlsdr-dev_*.deb 
-
 sudo dpkg -i rtl-sdr_*.deb
+```
 
 
 # Building a Debian package (arm64) for the navtex software
@@ -73,10 +64,10 @@ cd..
 
 Install the resulting `navtex` `.deb` with `dpkg`, and reboot the raspberry pi:
 
-
+```sh
 sudo dpkg -i navtex*.deb
 sudo shutdown -r now
-
+```
 
 The package enables and starts both services; check them with `systemctl status navtexreceiver navtexwebserver`. 
 The web interface listens on port 8080.
@@ -90,39 +81,31 @@ The build includes both capture backends, so building from source requires the S
 
 run following commands to install some prerequisites:
 
+```sh
 sudo apt-get install libcjson-dev
-
 sudo apt-get install libsqlite3-dev
-
 sudo apt-get install libmicrohttpd-dev
-
 sudo apt-get install sqlite3
-
 sudo apt-get install autotools-dev autoconf
-
+```
 
 then git clone this repository:
 
+```sh
 git clone https://github.com/bartelvdh/Navtex
-
+```
 
 and do the following:
 
+```sh
 cd Navtex
-
 autoreconf
-
 automake --add-missing
-
 autoreconf
-
 ./configure
-
 make
-
 sudo make install
-
-
+```
 
 
 # Get time from GPS
@@ -135,25 +118,24 @@ apt-get install gpsd chrony
 
 Put these lines in /etc/default/gpsd :
 
+```sh
 START_DAEMON="true"
-
 USBAUTO="true"
-
 DEVICES="/dev/ttyACM0"
-
 GPSD_OPTIONS="-n"
-
+```
 
 run  
 
+```sh
 sudo systemctl enable --now gpsd
-
+```
 
 
 
 Put the follwing config in /etc/chrony/conf.d/gps.conf
 
-
+```sh
 #Example configuration using SHM or SOCK from gpsd and optional PPS
 refclock SHM 0 refid GPS precision 1e-1 offset 0.0 delay 0.2
 #If using a PPS pin (e.g., /dev/pps0):
@@ -162,6 +144,7 @@ refclock SHM 0 refid GPS precision 1e-1 offset 0.0 delay 0.2
 #Allow step adjustments on boot if time is off
 makestep 1 3
 
+```
 
 and run
 
@@ -174,7 +157,7 @@ sudo systemctl restart chrony
 You will have to perform the initial installation of packages on the PI while it is connected to the internet. 
 However later on, you may want configure it to be fully autonomous and act as a wireless access point. 
 
-
+```sh
 sudo nmcli connection add \
   type wifi \
   ifname wlan0 \
@@ -191,9 +174,11 @@ sudo nmcli connection modify navtex-ap \
   ipv6.method disabled \
   wifi-sec.key-mgmt wpa-psk \
   wifi-sec.psk "YourStrongPassword"
+```
 
-
+```sh
 sudo nmcli connection up navtex-ap  
+```
 (this will cut your existing wifi connection and actually turn the pi into a wireless access point)
 
 
@@ -207,8 +192,12 @@ In case you installed the software via a .deb package, you can permanently chang
 
 find the line 
 
+```sh
 ExecStart=/usr/bin/navtexreceiver
+```
 
 e.g. to always enable the bias T voltage, change it into
 
+```sh
 ExecStart=/usr/bin/navtexreceiver -b 
+```
