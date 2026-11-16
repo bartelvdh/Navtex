@@ -62,6 +62,13 @@ cd..
 
 # Installing from .deb package
 
+WHen installing from scratch, first install the necessary dependencies: 
+
+```sh
+apt-get install libgnutls28-dev libmicrohttpd12t64 libmicrohttpd-dev libusb-1.0-0-dev libcjson-dev libsqlite3-dev
+```
+
+
 Install the resulting `navtex` `.deb` with `dpkg`, and reboot the raspberry pi:
 
 ```sh
