@@ -115,6 +115,33 @@ sudo make install
 ```
 
 
+# Install based on pre-built packages
+If pre-built packages exist, or can be downloaded, the install using those packages is probably the easiest option. 
+
+These are the packages needed: 
+rtl-sdr_2.0.3_arm64.deb
+librtlsdr0_2.0.3_arm64.deb
+librtlsdr-dev_2.0.3_arm64.deb
+navtex_0.01-1_arm64.deb
+
+This is the installation procedure: 
+
+```sh
+sudo apt update
+sudo apt upgrade
+sudo apt install libusb-1.0-0-dev
+
+sudo dpkg -i librtlsdr0_*.deb 
+sudo dpkg -i librtlsdr-dev_*.deb 
+sudo dpkg -i rtl-sdr_*.deb
+
+apt-get install  libmicrohttpd12t64 libcjson-dev 
+
+sudo dpkg -i navtex*.deb
+sudo shutdown -r now
+```
+
+
 # Get time from GPS
 
 Navtex needs the realtime clock to be set to allow giving messages received a timestamp. 
