@@ -216,6 +216,21 @@ sudo nmcli connection up navtex-ap
 (this will cut your existing wifi connection and actually turn the pi into a wireless access point)
 
 
+Enable automatic startup of the access point:
+
+```sh
+sudo nmcli connection modify navtex-ap \
+    connection.autoconnect yes \
+    connection.autoconnect-priority 100
+```
+
+Disable automatic startup of the access point:
+
+```sh
+sudo nmcli connection modify navtex-ap \
+    connection.autoconnect no
+```
+
 
 # options for the navtexreceiver process
 
