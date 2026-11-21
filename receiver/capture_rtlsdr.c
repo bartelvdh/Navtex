@@ -61,6 +61,7 @@ static void rtl_sdr_callback(unsigned char *buffer, uint32_t length, void *conte
         iq_pipeline_submit(xi, xq, 1);
         callback_context->has_pending_i = 0;
         offset = 1;
+        fprintf(stderr, "'t is prijs\n");
     }
 
     while (offset + 1 < length) {
@@ -81,6 +82,7 @@ static void rtl_sdr_callback(unsigned char *buffer, uint32_t length, void *conte
     if (offset != length) {
         callback_context->pending_i = buffer[offset];
         callback_context->has_pending_i = 1;
+        fprintf(stderr, "en nog eens\n");
     }
 }
 
