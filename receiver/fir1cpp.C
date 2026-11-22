@@ -76,12 +76,12 @@ extern "C" void init_fir_filter1()
    }
 }
 
- /*
- * Processes a new I/Q sample, applies FIR filtering and decimation, and passes the result to sample_in_2.
- * @param sample_I The in-phase (I) component of the sample.
- * @param sample_Q The quadrature (Q) component of the sample.
+/*
+ * Processes interleaved I/Q frames, applies FIR filtering and decimation, and
+ * passes each output frame to sample_in_2.
  */
-extern "C" void sample_in_1(double sample_I,double sample_Q)
+extern "C" void sample_in_1(const short *interleaved_samples,
+                            unsigned int frame_count)
 {
    int i;
    int conv_buf_ptr;
@@ -89,53 +89,36 @@ extern "C" void sample_in_1(double sample_I,double sample_Q)
    double conv_sum_Q;
    double filter_coef;
 
-   //buffer_I[buffer_ptr] = sample_I;
-   //buffer_Q[buffer_ptr] = sample_Q;
-   
-   buffer_IQ[buffer_ptr].sample_I = sample_I;
-   buffer_IQ[buffer_ptr].sample_Q = sample_Q;
-
-   decimation_count ++;
-   if( (decimation_count % DECIMATION_FACTOR) == 0)
-   {
-	   conv_sum_I = 0.0;
-	   conv_sum_Q = 0.0;
-	   conv_buf_ptr = buffer_ptr;
-
-	   if (conv_buf_ptr > FILTER_SIZE)
-	   {
-		   for(i=0; i < FILTER_SIZE; i++)
-		   {
-		      filter_coef=filter_h[i];
-		      conv_sum_I += filter_coef * buffer_IQ[conv_buf_ptr].sample_I;
-		      conv_sum_Q += filter_coef * buffer_IQ[conv_buf_ptr].sample_Q;
-		      conv_buf_ptr--;
-		   }
-	   }
-	   else
-	   {
-		   for(i=0; i < FILTER_SIZE; i++)
-		   {
-		      filter_coef=filter_h[i];
-		      conv_sum_I += filter_coef * buffer_IQ[conv_buf_ptr].sample_I;
-		      conv_sum_Q += filter_coef * buffer_IQ[conv_buf_ptr].sample_Q;
-		      if(conv_buf_ptr == 0)
-		      {
-			 conv_buf_ptr = FIR_FILTER_BUFFER_SIZE_1-1;
-		      }
-		      else
-		      {
-		         conv_buf_ptr--;
-		      }
-		   }
-	   }
-		
-	   sample_in_2(conv_sum_I,conv_sum_Q);
- 
-	   decimation_count = 0;
+   if (interleaved_samples == NULL) {
+      return;
    }
 
-   buffer_ptr = (buffer_ptr + 1) % FIR_FILTER_BUFFER_SIZE_1;
+   for (unsigned int sample_index = 0; sample_index < frame_count; sample_index++)
+   {
+      buffer_IQ[buffer_ptr].sample_I = interleaved_samples[sample_index * 2];
+      buffer_IQ[buffer_ptr].sample_Q = interleaved_samples[sample_index * 2 + 1];
+
+      decimation_count++;
+      if (decimation_count == DECIMATION_FACTOR)
+      {
+         conv_sum_I = 0.0;
+         conv_sum_Q = 0.0;
+         conv_buf_ptr = buffer_ptr;
+
+         for (i = 0; i < FILTER_SIZE; i++)
+         {
+            filter_coef = filter_h[i];
+            conv_sum_I += filter_coef * buffer_IQ[conv_buf_ptr].sample_I;
+            conv_sum_Q += filter_coef * buffer_IQ[conv_buf_ptr].sample_Q;
+            conv_buf_ptr = conv_buf_ptr == 0
+                               ? FIR_FILTER_BUFFER_SIZE_1 - 1
+                               : conv_buf_ptr - 1;
+         }
+
+         sample_in_2(conv_sum_I, conv_sum_Q);
+         decimation_count = 0;
+      }
+
+      buffer_ptr = (buffer_ptr + 1) % FIR_FILTER_BUFFER_SIZE_1;
+   }
 }
-
-

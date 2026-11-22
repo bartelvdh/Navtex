@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <limits.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,113 +9,28 @@
 #include "iq_pipeline.h"
 
 #define NAVTEX_CENTER_FREQUENCY 504000U
-#define IQ_SAMPLE_RATE 252000U
+#define IQ_SAMPLE_RATE IQ_PIPELINE_BASE_SAMPLE_RATE
 #define RTL_DECIMATION_FACTOR 4U
-#define RTL_INPUT_SAMPLE_RATE (IQ_SAMPLE_RATE * RTL_DECIMATION_FACTOR)
+#define RTL_INPUT_SAMPLE_RATE IQ_PIPELINE_HIGH_SAMPLE_RATE
 #define CONVERSION_BUFFER_SAMPLES 2048
 #define USB_STRING_SIZE 256
-
-/* Replace the unity placeholder with low-pass FIR taps for the 1.008 MHz input. */
-static const double decimation_filter[] = {
-    -0.000928753083968424,
-    -0.003963405116660199,
-    -0.001026352883960977,
-    0.012645424460821819,
-    0.018172064610594858,
-    -0.011391012464726999,
-    -0.056423892839638744,
-    -0.037394461516342188,
-    0.100277568318859991,
-    0.289981592769995189,
-    0.380102455490051450,
-    0.289981592769995189,
-    0.100277568318859991,
-    -0.037394461516342188,
-    -0.056423892839638799,
-    -0.011391012464726999,
-    0.018172064610594854,
-    0.012645424460821819,
-    -0.001026352883960977,
-    -0.003963405116660202,
-    -0.000928753083968424
-};
-
-#define DECIMATION_FILTER_TAPS \
-    (sizeof(decimation_filter) / sizeof(decimation_filter[0]))
 
 typedef struct {
     rtlsdr_dev_t *device;
     unsigned char pending_i;
     int has_pending_i;
-    short history_i[DECIMATION_FILTER_TAPS];
-    short history_q[DECIMATION_FILTER_TAPS];
-    size_t history_index;
-    unsigned int decimation_phase;
 } RtlSdrCallbackContext;
 
-static short clamp_sample(double sample)
+static void append_sample(unsigned char raw_i, unsigned char raw_q,
+                          short *output_i, short *output_q,
+                          uint32_t *output_count)
 {
-    if (sample > SHRT_MAX) {
-        return SHRT_MAX;
-    }
-    if (sample < SHRT_MIN) {
-        return SHRT_MIN;
-    }
-    return (short)sample;
-}
-
-static int decimate_sample(RtlSdrCallbackContext *callback_context,
-                           short input_i, short input_q,
-                           short *output_i, short *output_q)
-{
-    double filtered_i = 0.0;
-    double filtered_q = 0.0;
-
-    callback_context->history_i[callback_context->history_index] = input_i;
-    callback_context->history_q[callback_context->history_index] = input_q;
-    callback_context->history_index =
-        (callback_context->history_index + 1) % DECIMATION_FILTER_TAPS;
-
-    callback_context->decimation_phase++;
-    if (callback_context->decimation_phase < RTL_DECIMATION_FACTOR) {
-        return 0;
-    }
-    callback_context->decimation_phase = 0;
-
-    for (size_t tap = 0; tap < DECIMATION_FILTER_TAPS; tap++) {
-        size_t history_index =
-            (callback_context->history_index + DECIMATION_FILTER_TAPS - 1 - tap) %
-            DECIMATION_FILTER_TAPS;
-        filtered_i += decimation_filter[tap] *
-                      callback_context->history_i[history_index];
-        filtered_q += decimation_filter[tap] *
-                      callback_context->history_q[history_index];
-    }
-
-    *output_i = clamp_sample(filtered_i);
-    *output_q = clamp_sample(filtered_q);
-    return 1;
-}
-
-static void process_sample(RtlSdrCallbackContext *callback_context,
-                           unsigned char raw_i, unsigned char raw_q,
-                           short *output_i, short *output_q,
-                           uint32_t *output_count)
-{
-    short filtered_i;
-    short filtered_q;
-
-    if (decimate_sample(callback_context,
-                        (short)(((int)raw_i - 128) * 128),
-                        (short)(((int)raw_q - 128) * 128),
-                        &filtered_i, &filtered_q)) {
-        output_i[*output_count] = filtered_i;
-        output_q[*output_count] = filtered_q;
-        (*output_count)++;
-        if (*output_count == CONVERSION_BUFFER_SAMPLES) {
-            iq_pipeline_submit(output_i, output_q, *output_count);
-            *output_count = 0;
-        }
+    output_i[*output_count] = (short)(((int)raw_i - 128) * 128);
+    output_q[*output_count] = (short)(((int)raw_q - 128) * 128);
+    (*output_count)++;
+    if (*output_count == CONVERSION_BUFFER_SAMPLES) {
+        iq_pipeline_submit(output_i, output_q, *output_count);
+        *output_count = 0;
     }
 }
 
@@ -158,15 +72,15 @@ static void rtl_sdr_callback(unsigned char *buffer, uint32_t length, void *conte
     uint32_t offset = 0;
 
     if (callback_context->has_pending_i && length > 0) {
-        process_sample(callback_context, callback_context->pending_i, buffer[0],
-                       xi, xq, &output_count);
+        append_sample(callback_context->pending_i, buffer[0], xi, xq,
+                      &output_count);
         callback_context->has_pending_i = 0;
         offset = 1;
     }
 
     while (offset + 1 < length) {
-        process_sample(callback_context, buffer[offset], buffer[offset + 1],
-                       xi, xq, &output_count);
+        append_sample(buffer[offset], buffer[offset + 1], xi, xq,
+                      &output_count);
         offset += 2;
     }
 
@@ -245,7 +159,7 @@ int capture_rtlsdr(const CaptureOptions *capture_options)
         goto cleanup;
     }
 
-    if (iq_pipeline_init((int)IQ_SAMPLE_RATE) != 0) {
+    if (iq_pipeline_init((int)RTL_INPUT_SAMPLE_RATE) != 0) {
         goto cleanup;
     }
     pipeline_initialized = 1;

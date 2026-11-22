@@ -6,9 +6,10 @@
 #include <unistd.h>
 
 #include "iq_pipeline.h"
+#include "fir0cpp.h"
 #include "wav.h"
 
-void sample_in_1(double sample_I, double sample_Q);
+void sample_in_1(const short *interleaved_samples, unsigned int frame_count);
 
 #define PIPELINE_BUFFER_SECONDS 8
 #define DEBUG_RECORD_SECONDS 900
@@ -37,7 +38,8 @@ int iq_pipeline_init(int configured_sample_rate)
 {
     srand((unsigned int)time(NULL));
 
-    if (configured_sample_rate <= 0) {
+    if (configured_sample_rate != IQ_PIPELINE_BASE_SAMPLE_RATE &&
+        configured_sample_rate != IQ_PIPELINE_HIGH_SAMPLE_RATE) {
         fprintf(stderr, "Invalid I/Q sample rate: %d\n", configured_sample_rate);
         return -1;
     }
@@ -51,6 +53,7 @@ int iq_pipeline_init(int configured_sample_rate)
     }
 
     sample_rate = configured_sample_rate;
+    init_fir_filter0();
     in_idx = 1;
     out_idx = 1;
     stop_requested = 0;
@@ -114,7 +117,6 @@ void iq_pipeline_run(int debug_mode)
             unsigned int sample_count;
             unsigned int frame_count;
             unsigned int frames_to_write;
-            unsigned int index;
 
             if (from > to) {
                 to = buffer_size - 1;
@@ -122,11 +124,10 @@ void iq_pipeline_run(int debug_mode)
             sample_count = to - from + 1;
             frame_count = sample_count / 2;
 
-            index = from;
-            for (unsigned int i = 0; i < frame_count; i++) {
-                sample_in_1((double)sample_buffer[index],
-                            (double)sample_buffer[index + 1]);
-                index += 2;
+            if (sample_rate == IQ_PIPELINE_HIGH_SAMPLE_RATE) {
+                sample_in_0(&sample_buffer[from], frame_count);
+            } else {
+                sample_in_1(&sample_buffer[from], frame_count);
             }
 
             frames_to_write = frame_count;
