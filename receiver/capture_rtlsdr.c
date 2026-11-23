@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <rtl-sdr.h>
@@ -32,6 +33,48 @@ static void append_sample(unsigned char raw_i, unsigned char raw_q,
         iq_pipeline_submit(output_i, output_q, *output_count);
         *output_count = 0;
     }
+}
+
+static int set_minimum_tuner_gain(rtlsdr_dev_t *device)
+{
+    int gain_count = rtlsdr_get_tuner_gains(device, NULL);
+    int *gains;
+    int minimum_gain;
+
+    if (gain_count <= 0) {
+        fprintf(stderr, "Unable to query RTL-SDR tuner gains\n");
+        return -1;
+    }
+
+    gains = malloc((size_t)gain_count * sizeof(*gains));
+    if (gains == NULL) {
+        perror("Unable to allocate RTL-SDR tuner gain list");
+        return -1;
+    }
+
+    if (rtlsdr_get_tuner_gains(device, gains) != gain_count) {
+        fprintf(stderr, "Unable to read RTL-SDR tuner gains\n");
+        free(gains);
+        return -1;
+    }
+
+    minimum_gain = gains[0];
+    for (int i = 1; i < gain_count; i++) {
+        if (gains[i] < minimum_gain) {
+            minimum_gain = gains[i];
+        }
+    }
+    free(gains);
+
+    if (rtlsdr_set_tuner_gain(device, minimum_gain) != 0) {
+        fprintf(stderr, "Unable to set RTL-SDR tuner gain to minimum (%d)\n",
+                minimum_gain);
+        return -1;
+    }
+
+    fprintf(stderr, "RTL-SDR manual tuner gain set to minimum: %.1f dB\n",
+            minimum_gain / 10.0);
+    return 0;
 }
 
 static int find_rtlsdr_blog_v4(uint32_t *device_index, int report_errors)
@@ -154,8 +197,18 @@ int capture_rtlsdr(const CaptureOptions *capture_options)
         goto cleanup;
     }
 
-    if (rtlsdr_set_tuner_gain_mode(device, 0) != 0) {
-        fprintf(stderr, "Unable to enable RTL-SDR automatic tuner gain\n");
+    fprintf(stderr, "RTL-SDR center frequency: %u Hz\n",
+            rtlsdr_get_center_freq(device));
+
+    if (rtlsdr_set_tuner_gain_mode(device, 1) != 0) {
+        fprintf(stderr, "Unable to disable RTL-SDR automatic tuner gain\n");
+        goto cleanup;
+    }
+    if (rtlsdr_set_agc_mode(device, 0) != 0) {
+        fprintf(stderr, "Unable to disable RTL-SDR digital AGC\n");
+        goto cleanup;
+    }
+    if (set_minimum_tuner_gain(device) != 0) {
         goto cleanup;
     }
 
