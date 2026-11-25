@@ -15,6 +15,7 @@
 #define RTL_INPUT_SAMPLE_RATE IQ_PIPELINE_HIGH_SAMPLE_RATE
 #define CONVERSION_BUFFER_SAMPLES 2048
 #define USB_STRING_SIZE 256
+#define RTL_TARGET_TUNER_GAIN 100
 
 typedef struct {
     rtlsdr_dev_t *device;
@@ -35,11 +36,11 @@ static void append_sample(unsigned char raw_i, unsigned char raw_q,
     }
 }
 
-static int set_minimum_tuner_gain(rtlsdr_dev_t *device)
+static int set_tuner_gain_near_target(rtlsdr_dev_t *device)
 {
     int gain_count = rtlsdr_get_tuner_gains(device, NULL);
     int *gains;
-    int minimum_gain;
+    int selected_gain;
 
     if (gain_count <= 0) {
         fprintf(stderr, "Unable to query RTL-SDR tuner gains\n");
@@ -58,22 +59,26 @@ static int set_minimum_tuner_gain(rtlsdr_dev_t *device)
         return -1;
     }
 
-    minimum_gain = gains[0];
+    selected_gain = gains[0];
     for (int i = 1; i < gain_count; i++) {
-        if (gains[i] < minimum_gain) {
-            minimum_gain = gains[i];
+        long current_distance = labs((long)gains[i] - RTL_TARGET_TUNER_GAIN);
+        long selected_distance =
+            labs((long)selected_gain - RTL_TARGET_TUNER_GAIN);
+        if (current_distance < selected_distance) {
+            selected_gain = gains[i];
         }
     }
     free(gains);
 
-    if (rtlsdr_set_tuner_gain(device, minimum_gain) != 0) {
-        fprintf(stderr, "Unable to set RTL-SDR tuner gain to minimum (%d)\n",
-                minimum_gain);
+    if (rtlsdr_set_tuner_gain(device, selected_gain) != 0) {
+        fprintf(stderr, "Unable to set RTL-SDR tuner gain to %.1f dB\n",
+                selected_gain / 10.0);
         return -1;
     }
 
-    fprintf(stderr, "RTL-SDR manual tuner gain set to minimum: %.1f dB\n",
-            minimum_gain / 10.0);
+    fprintf(stderr, "RTL-SDR manual tuner gain set to %.1f dB "
+                    "(nearest supported value to 10.0 dB)\n",
+            selected_gain / 10.0);
     return 0;
 }
 
@@ -201,14 +206,14 @@ int capture_rtlsdr(const CaptureOptions *capture_options)
             rtlsdr_get_center_freq(device));
 
     if (rtlsdr_set_tuner_gain_mode(device, 1) != 0) {
-        fprintf(stderr, "Unable to disable RTL-SDR automatic tuner gain\n");
+        fprintf(stderr, "Unable to enable RTL-SDR manual tuner gain\n");
         goto cleanup;
     }
     if (rtlsdr_set_agc_mode(device, 0) != 0) {
         fprintf(stderr, "Unable to disable RTL-SDR digital AGC\n");
         goto cleanup;
     }
-    if (set_minimum_tuner_gain(device) != 0) {
+    if (set_tuner_gain_near_target(device) != 0) {
         goto cleanup;
     }
 
